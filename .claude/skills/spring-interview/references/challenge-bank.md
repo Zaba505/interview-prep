@@ -4,7 +4,7 @@
 
 **Part 1 (plain Java, about 20–25 minutes):**
 - **Scope:** solvable in 20–25 minutes by a strong engineer. Keep it to one core idea, not a puzzle.
-- **Domain:** generic business domains. Avoid cards and payments, which the candidate already knows from their day job.
+- **Domain:** generic business domains. Avoid cards and payments.
 - **Planted edge cases:** include 2–3 that the statement deliberately doesn't settle, such as empty input, ties, duplicates, unsorted input, boundary inclusivity, time zones, or rounding. A strong candidate asks about them. Don't hint at them.
 - **Room for Principal-level choices:**
   - immutability and records
