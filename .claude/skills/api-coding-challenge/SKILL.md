@@ -1,6 +1,6 @@
 ---
-name: spring-interview
-description: Run a mock Principal-level Spring API coding interview. It covers a plain-Java problem, then elevating it into a Spring REST API, then a follow-up round on performance, testing, security, observability, API design and resilience. Every Q&A is captured for later study.
+name: api-coding-challenge
+description: Run a mock Principal-level API coding interview, parameterized by language/framework stack (java/spring-boot is the only stack for now). It covers a problem in the plain language with no framework, then elevating it into a REST API in the stack's framework, then a follow-up round on performance, testing, security, observability, API design and resilience. Every Q&A is captured for later study.
 disable-model-invocation: true
 argument-hint: "[stateful|collections|modeling|<idea>] | review <folder>"
 ---
@@ -34,7 +34,7 @@ Full Java syntax isn't graded. The candidate doesn't need imports, package decla
 
 ## Files and paths
 
-- **Skill references** live in this skill's directory (`.claude/skills/spring-interview/references/`). Load each one only in the phase that needs it:
+- **Skill references** live in this skill's directory (`.claude/skills/api-coding-challenge/references/`). Load each one only in the phase that needs it:
   - `challenge-bank.md`: design rules, seeds, file templates, transcript format
   - `follow-ups.md`: the follow-up question bank with strong-answer signals
   - `rubric.md`: scoring, verdict, FEEDBACK.md and INDEX.md templates
