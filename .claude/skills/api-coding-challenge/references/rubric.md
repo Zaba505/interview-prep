@@ -118,7 +118,7 @@ Judgment overrides arithmetic, but say why when it does. Write it the way a cand
 | Part 1 | <m> min | {part1_min} |
 | Part 2 | <m> min | {part2_min} |
 | Follow-ups | ~<m> min | 15–20 |
-| **Total** | <m> min | <total target> |
+| **Total** | <m> min | <{part1_min} + {part2_min} + 15–20> |
 
 Hints used: <n> (<level and topic for each, or "none">)
 
