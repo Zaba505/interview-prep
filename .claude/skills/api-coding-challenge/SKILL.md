@@ -88,7 +88,7 @@ Edit Platform and Emphasis to match the role you're preparing for; Title and Sta
 The candidate reuses finished sessions as study material, so every question and answer goes into TRANSCRIPT.md *as it happens*. Never reconstruct it at the end.
 
 - **When:** in the same turn a candidate message completes a Q/A pair (their question and your answer, or your question and their answer), append that pair *before* writing your reply.
-- **Verbatim:** record both sides exactly as typed, typos included.
+- **Verbatim:** record both sides exactly as typed, typos included; reply with the logged answer word for word.
 - **How:** use Bash with this exact quoted delimiter, so nothing in the text can break the heredoc:
   ```bash
   cat >> <folder>/TRANSCRIPT.md <<'__QA_END__'
