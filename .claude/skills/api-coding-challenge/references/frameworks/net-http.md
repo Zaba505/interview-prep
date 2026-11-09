@@ -20,7 +20,7 @@ Framework layer for api-coding-challenge, read with one language layer on top of
 
 ## Request dispatch
 
-- `http.Server` runs every request on its own goroutine (one per connection for HTTP/1.1, one per stream for HTTP/2), with no pool and no limit on how many run at once.
+- `http.Server` serves each HTTP/1.1 connection on its own goroutine, handling that connection's requests one after another, and runs each HTTP/2 stream's handler on its own goroutine. So every in-flight request is on a separate goroutine, with no pool and no server-wide limit on how many run at once.
 - The handler built once by `NewServer(deps)`, and the `Server` struct behind it, is shared by every request goroutine. A map field on it gets concurrent writes, and concurrent map writes crash the whole process rather than one request (P2).
 - There's no built-in concurrency cap: a semaphore middleware or `netutil.LimitListener` (`golang.org/x/net`) adds one. The server recovers a panic inside a handler and closes that connection, but a panic in a goroutine the handler started kills the process.
 
@@ -40,7 +40,7 @@ Framework layer for api-coding-challenge, read with one language layer on top of
 - The Part 1 type becomes a dependency of a `Server` struct built by an explicit `NewServer(deps) http.Handler`, which registers the routes. There's no DI container, so the wiring is plain constructor calls.
 - The clock (`now func() time.Time`) and the in-memory store are constructor parameters, and the store sits behind a small interface defined where the handlers consume it.
 - Handlers only decode the request DTO, call the Part 1 code and encode the response DTO.
-- Part 1 state that was used from one goroutine must be guarded, with the mutex in the Part 1 type next to the state rather than in the handler, because every request runs on its own goroutine against the same instance.
+- Part 1 state that was used from one goroutine must be guarded, with the mutex in the Part 1 type next to the state rather than in the handler, because concurrent requests run on separate goroutines against the same instance.
 
 ## Built-ins to forbid
 
@@ -94,8 +94,8 @@ A `NewServer(deps)` constructor that registers routes on an `http.ServeMux` and 
 
 ### P2: Concurrency inside the shared server struct
 
-Opener: "Every request runs on its own goroutine against the same `<Server>`, which holds `<field>`. What happens with 200 concurrent requests?"
-- `http.Server` gives each request its own goroutine with no pool or cap, so `<field>` has as many concurrent callers as there are requests in flight
+Opener: "Concurrent requests each run on their own goroutine against the same `<Server>`, which holds `<field>`. What happens with 200 concurrent requests?"
+- every in-flight request is on its own goroutine (one per HTTP/1.1 connection, one per HTTP/2 stream), with no pool or cap, so `<field>` has as many concurrent callers as there are requests in flight
 - concurrent writes to a shared map crash the whole process (`fatal error: concurrent map writes`), and the server's per-handler panic recovery can't catch it
 - a global mutex middleware that serializes every request isn't the fix; the lock belongs in the Part 1 type, next to the state
 

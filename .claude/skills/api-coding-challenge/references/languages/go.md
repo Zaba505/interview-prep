@@ -50,7 +50,7 @@ Tolerance covers ceremony, never decisions.
 
 - Goroutines are multiplexed by the runtime onto `GOMAXPROCS` OS threads, so any two goroutines can run in parallel.
 - Under the Go memory model a data race has no defined result. Concurrent map writes are detected by the runtime and kill the whole process with `fatal error: concurrent map writes`, which `recover` can't catch. A race on any other value (a counter, a slice, a struct field) silently loses updates, and a slice or interface value can tear.
-- Primitives: `sync.Mutex` / `RWMutex`, `sync/atomic` (`atomic.Int64`, and `atomic.Pointer[T]` for publishing immutable snapshots), `sync.Map` for append-mostly caches, `sync.Once`, channels for handing ownership between goroutines, and `golang.org/x/sync` (`errgroup`, `semaphore`, `singleflight`).
+- Primitives: `sync.Mutex` / `RWMutex`, `sync/atomic` (`atomic.Int64`, and `atomic.Pointer[T]` for publishing immutable snapshots), `sync.Map` for append-mostly caches, `sync.Once`, and channels for handing ownership between goroutines. Beyond Part 1, which is standard-library only, `golang.org/x/sync` adds `errgroup`, `semaphore` and `singleflight`.
 - Race tooling: the race detector (`go test -race`) reports only races that actually happen during the run, so a test has to drive the concurrent path; `go test -race -count=N` repeats it. It costs several times the CPU and memory, so it runs in tests and CI, not production.
 - Container knobs: before Go 1.25, `GOMAXPROCS` defaulted to the host's CPU count rather than the container's CPU limit (`automaxprocs` was the fix); from Go 1.25 it honors the cgroup limit. `GOMEMLIMIT` sets a soft memory limit so the GC works harder before the container is OOM-killed, and `GOGC` trades memory for CPU.
 
