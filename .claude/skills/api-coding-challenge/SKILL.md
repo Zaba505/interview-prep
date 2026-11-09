@@ -34,17 +34,19 @@ Full Java syntax isn't graded. The candidate doesn't need imports, package decla
 
 ## Files and paths
 
-- **Skill references** live in this skill's directory (`.claude/skills/api-coding-challenge/references/`). Load each one only in the phase that needs it:
+- **Skill references** live in `${CLAUDE_SKILL_DIR}/references/`. Load each one only in the phase that needs it:
   - `challenge-bank.md`: design rules, seeds, file templates, transcript format
   - `follow-ups.md`: the follow-up question bank with strong-answer signals
-  - `rubric.md`: scoring, verdict, FEEDBACK.md and INDEX.md templates
-- **Session folders** go in `practice/<YYYY-MM-DD>-<slug>/` at the project root, next to `.claude/`.
-- **`practice/INDEX.md`** is the study index, with one row per completed session.
+  - `rubric.md`: scoring, verdict, and the FEEDBACK.md, session.yaml and INDEX.md templates
+- **Practice output** follows the root `CLAUDE.md` § practice/ conventions. Write and glob only in this skill's practice directory, `${CLAUDE_SKILL_DIR}/../../../practice/api-coding-challenge/`. Anchoring paths there keeps the skill working from any directory, even inside a session folder. The directory holds:
+  - `<YYYY-MM-DD>-java-spring-boot-<slug>[-N]/`: one session folder, which the references call `<session-dir>`. The facets are the canonical `<language>-<framework>` IDs, fixed at java/spring-boot for now.
+  - `INDEX.md`: the study index, regenerated from every `complete` session.yaml and never appended to.
 
 Files in each session folder:
 
 | File | Who writes it | When |
 |---|---|---|
+| `session.yaml` | you | Phase 1 (identity fields), debrief (results), `review <folder> abandon` |
 | `CHALLENGE.md` | you | Phase 1 (Part 1), Phase 2 (Part 2 appended) |
 | `TRANSCRIPT.md` | you | appended after **every** exchange |
 | anything else (`*.java`, notes) | candidate | Phase 2. **Never create or edit these** |
@@ -61,7 +63,7 @@ The candidate will reuse finished sessions as study material, so every question 
 - **Verbatim:** record the candidate's words exactly as typed, typos included. Record your own words exactly too.
 - **How to append:** use Bash with this exact quoted delimiter, so nothing in the text can break the heredoc:
   ```bash
-  cat >> practice/<folder>/TRANSCRIPT.md <<'__QA_END__'
+  cat >> ${CLAUDE_SKILL_DIR}/../../../practice/api-coding-challenge/<folder>/TRANSCRIPT.md <<'__QA_END__'
   <entry>
   __QA_END__
   ```
@@ -69,6 +71,13 @@ The candidate will reuse finished sessions as study material, so every question 
 
 ## Phase 0: Route on arguments
 
+`<folder>` is a folder name in the practice directory, or a full path to one.
+
+- **`review <folder> abandon`:** give up on an in-progress session.
+  1. If `<folder>/session.yaml` doesn't have `status: in-progress`, say so and stop.
+  2. Load `references/challenge-bank.md` and identify the seed `CHALLENGE.md` was mutated from (`none` for a fresh design).
+  3. In `session.yaml`, add `seed: <id>` and set `status: abandoned`. The session gets no INDEX.md row, but rotation counts its seed as used.
+  4. Confirm in chat and stop.
 - **`review <folder>`:** resume or assess an existing session.
   1. Confirm `<folder>/CHALLENGE.md` exists.
   2. If `TRANSCRIPT.md` exists, append a `_Resumed <date '+%Y-%m-%d %H:%M'>_` marker. Otherwise create it from the skeleton.
@@ -82,15 +91,27 @@ The candidate will reuse finished sessions as study material, so every question 
 ## Phase 1: Set up the challenge
 
 1. Run `date '+%Y-%m-%d %H:%M %Z'` and `date +%s` to get the start time and start epoch.
-2. Read `practice/INDEX.md` if it exists. If it doesn't, skim the titles in `practice/*/CHALLENGE.md`. Then:
+2. **Rotation.** Read only this skill's records: `INDEX.md` and `*/session.yaml` in `${CLAUDE_SKILL_DIR}/../../../practice/api-coding-challenge/`. Either may be missing.
+   - If a `complete` session has no INDEX.md row (an interrupted debrief), regenerate INDEX.md first, as in debrief step 3.
    - Rotate to the least-practiced shape, unless an argument chose one.
-   - Never reuse a seed already used, unless every seed in that shape is used.
-   - If past sessions show weak categories, prefer a seed whose follow-up hooks hit them.
+   - Never reuse a used seed unless every seed in that shape is used. A seed is used if it appears in INDEX.md or in an `abandoned` session.yaml.
+   - If the Below bar column shows weak categories, prefer a seed whose follow-up hooks hit them.
 3. Load `references/challenge-bank.md`. Mutate a seed (new nouns, a different twist, shifted rules) or design a fresh problem using the design rules. Plan Part 2 in your head, but **do not write Part 2 anywhere yet.**
-4. Create `practice/<YYYY-MM-DD>-<slug>/`. The slug is the kebab-cased title; add `-2`, `-3`, … if it's taken.
-5. Write `CHALLENGE.md` from the template: header, ground rules, Part 1 only.
-6. Write `TRANSCRIPT.md` from the skeleton.
-7. In chat, give:
+4. Create the session folder `${CLAUDE_SKILL_DIR}/../../../practice/api-coding-challenge/<YYYY-MM-DD>-java-spring-boot-<slug>/`. The slug is the kebab-cased title; add `-2`, `-3`, … if the folder already exists.
+5. Write `session.yaml` with the identity fields only:
+   ```yaml
+   skill: api-coding-challenge
+   date: <YYYY-MM-DD>
+   title: "<Title>"
+   status: in-progress
+   language: java
+   framework: spring-boot
+   shape: <stateful | collections | modeling>
+   ```
+   **Never record the seed in Phase 1**, in session.yaml, CHALLENGE.md or chat, because it points the candidate at the planted edge cases.
+6. Write `CHALLENGE.md` from the template: header, ground rules, Part 1 only.
+7. Write `TRANSCRIPT.md` from the skeleton.
+8. In chat, give:
    - the folder path
    - the full Part 1 statement
    - one line on how this works: ask questions anytime, say **"part 1 done"** to move on, ask for a hint if stuck.
@@ -131,7 +152,7 @@ The candidate will reuse finished sessions as study material, so every question 
 ## Phase 3: Assessment and follow-up round
 
 1. Append the Part 2 milestone if it isn't there yet, with epoch, Part 2 minutes and total minutes.
-2. Read every file in the session folder except `CHALLENGE.md`, `TRANSCRIPT.md`, `FEEDBACK.md` and `REFERENCE-SOLUTION.md`.
+2. Read every file in the session folder except `session.yaml`, `CHALLENGE.md`, `TRANSCRIPT.md`, `FEEDBACK.md` and `REFERENCE-SOLUTION.md`.
 3. Load `references/rubric.md` and `references/follow-ups.md`. Build the private rubric as described in `rubric.md`. Keep it private until the debrief.
 4. Append `## Walkthrough` to the transcript.
    - Ask: "Give me a one-to-two-minute walkthrough of your solution, including the complexity of the core operations."
@@ -163,7 +184,9 @@ The candidate will reuse finished sessions as study material, so every question 
       - Each answer is a concise, concrete model answer. Use the "Strong Principal answer includes" signals plus anything specific to their code.
       - Then append `## Debrief notes` with "Clarifying questions worth asking". List the planted edge cases and design-shaping questions they didn't raise, each with one line on why it matters.
    2. **Write `FEEDBACK.md`** from the `rubric.md` template.
-   3. **Update the study index:** append a row to `practice/INDEX.md`, creating the file with its header if it's missing.
+   3. **Record the session:**
+      - Complete `session.yaml` per `rubric.md` § session.yaml: add `seed`, `verdict`, `topics` and the `score_<dim>` keys, then set `status: complete`. If you no longer know the seed (e.g. after `review`), match `CHALLENGE.md` against `challenge-bank.md`.
+      - Then regenerate the practice directory's `INDEX.md` per `rubric.md` § INDEX.md, rewriting the whole file.
    4. **Summarize in chat:** the verdict, the top two strengths, the top three gaps, and the paths to `FEEDBACK.md` and `TRANSCRIPT.md`.
    5. **Offer `REFERENCE-SOLUTION.md`.** Write it only if the candidate says yes. It contains:
       - **Code:** a concise, Principal-quality Part 1 + Part 2 implementation under the same pseudo-syntax ground rules. It covers:
