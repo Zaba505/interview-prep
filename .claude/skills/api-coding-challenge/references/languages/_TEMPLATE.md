@@ -12,7 +12,7 @@ You can fill this template in without opening SKILL.md or the core references:
 1. **Copy the template.** Copy the block under [Skeleton](#skeleton) into `languages/<id>.md`, where `<id>` is the language's canonical ID. If the framework is new too, fill in `../frameworks/_TEMPLATE.md` after this one.
 2. **Fill in the header.** Give every key in [Header keys](#header-keys) a value.
    - Add the `id` to the `languages` row of each framework file it pairs with.
-   - Check the grep contract: `grep -E '^\| (id|aliases|languages) \|' languages/<id>.md` must print exactly your `id` and `aliases` rows.
+   - Check the grep contract from `references/`: `grep -E '^\| (id|aliases|languages) \|' languages/<id>.md` must print exactly your `id` and `aliases` rows.
 3. **Cover the primary threads.** Every thread whose primary layer is *language* in [Thread IDs](#thread-ids) needs at least 2 entries or an `N/A: <why>` line. Add to any other thread where the language has something to say.
 4. **Calibrate all 15 seeds.** Give every seed in [Seed IDs](#seed-ids) a Seed calibration entry. `ok` is allowed, but only after you've checked.
 5. **Dry-run one session.** Run `/api-coding-challenge <id>/<framework-id> <shape>` through to the debrief, answering as a candidate. Check that:
@@ -108,7 +108,7 @@ The debrief scores ten dimensions from 1 to 4, where 3 is the Principal bar and 
 |---|---|---|---|
 | 1 | Problem solving & correctness | `correctness` | the Part 1 code and the clarifying questions |
 | 2 | Code quality & modeling | `code_quality` | the candidate's code, against the core anchor plus the language file's Dim-2 anchor |
-| 3 | `<framework display>` implementation (Part 2 code) | `framework_impl` | the Part 2 code, against the core anchor plus the framework file's Dim-3 anchor |
+| 3 | `{Framework}` implementation (Part 2 code) | `framework_impl` | the Part 2 code, against the core anchor plus the framework file's Dim-3 anchor |
 | 4 | Communication | `communication` | the whole session |
 | 5 | Performance | `performance` | the P threads |
 | 6 | API design & versioning | `api_design` | the A threads |
@@ -214,7 +214,7 @@ The header is a two-column markdown table at the top of the file. Keys are lower
 | Key | Value | The skill uses it for | Java example |
 |---|---|---|---|
 | `id` | The canonical ID: lowercase letters, digits and `-`, matching the file name `languages/<id>.md`. Don't change it once sessions use it, because session folders and session.yaml record it. | Stack resolution, the session folder name, `language:` in session.yaml, INDEX.md, and the `languages` row of framework files | `java` |
-| `aliases` | Other tokens that resolve to this file, lowercase. No spaces and no `/`, because a stack token is split on its first `/`. Each alias is unique across `languages/`. If there's no other alias, repeat the `id`. | Stack resolution | `java, jdk` |
+| `aliases` | Other tokens that resolve to this file, lowercase. An alias can't contain a space, because the arguments are split on spaces, or a `/`, because a stack token is split on its first `/`. The space after each comma only separates the list. Each alias is unique across `languages/`. If there's no other alias, repeat the `id`. | Stack resolution | `java, jdk` |
 | `display` | The language's name as written in prose | `{Language}` in CHALLENGE.md, the ground rules and Part 1; the Title and Stack lines of the role block | `Java` |
 | `fence` | The info string for fenced code blocks | Interface sketches in CHALLENGE.md; REFERENCE-SOLUTION.md | `java` |
 | `extensions` | Globs for the candidate's source files | Reading the candidate's code in Phase 3; file names in FEEDBACK.md's code review | `*.java` |
@@ -225,10 +225,10 @@ The header is a two-column markdown table at the top of the file. Keys are lower
 
 **Values.** Each value is one line of raw text, with no backticks and no `|`, because the skill reads values literally. (A glob may render oddly on GitHub, and that's fine.) Separate list items with a comma and a space. No value may be empty.
 
-**Grep contract.** The skill finds stacks with:
+**Grep contract.** SKILL.md finds stacks with:
 
 ```bash
-grep -E '^\| (id|aliases|languages) \|' references/{languages,frameworks}/[!_]*.md
+grep -E '^\| (id|aliases|languages) \|' ${CLAUDE_SKILL_DIR}/references/{languages,frameworks}/[!_]*.md
 ```
 
 - Write the `id` and `aliases` rows exactly as `| key | value |`, with one space on each side of every cell.

@@ -12,7 +12,7 @@ You can fill this template in without opening SKILL.md or the core references:
 1. **Copy the template.** Copy the block under [Skeleton](#skeleton) into `frameworks/<id>.md`, where `<id>` is the framework's canonical ID. If the language is new too, fill in `../languages/_TEMPLATE.md` first.
 2. **Fill in the header.** Give every key in [Header keys](#header-keys) a value.
    - `languages` may list only language IDs that have a file in `../languages/`.
-   - Check the grep contract: `grep -E '^\| (id|aliases|languages) \|' frameworks/<id>.md` must print exactly your `id`, `aliases` and `languages` rows.
+   - Check the grep contract from `references/`: `grep -E '^\| (id|aliases|languages) \|' frameworks/<id>.md` must print exactly your `id`, `aliases` and `languages` rows.
 3. **Cover the primary threads.** Every thread whose primary layer is *framework* in [Thread IDs](#thread-ids) needs at least 2 entries or an `N/A: <why>` line. Add to any other thread where the framework has something to say.
 4. **Calibrate all 15 seeds.** Give every seed in [Seed IDs](#seed-ids) a Built-ins to forbid entry. `none` is allowed, but only after you've checked.
 5. **Dry-run one session.** Run `/api-coding-challenge <language-id>/<id> <shape>` through to the debrief, answering as a candidate. Check that:
@@ -108,7 +108,7 @@ The debrief scores ten dimensions from 1 to 4, where 3 is the Principal bar and 
 |---|---|---|---|
 | 1 | Problem solving & correctness | `correctness` | the Part 1 code and the clarifying questions |
 | 2 | Code quality & modeling | `code_quality` | the candidate's code, against the core anchor plus the language file's Dim-2 anchor |
-| 3 | `<framework display>` implementation (Part 2 code) | `framework_impl` | the Part 2 code, against the core anchor plus the framework file's Dim-3 anchor |
+| 3 | `{Framework}` implementation (Part 2 code) | `framework_impl` | the Part 2 code, against the core anchor plus the framework file's Dim-3 anchor |
 | 4 | Communication | `communication` | the whole session |
 | 5 | Performance | `performance` | the P threads |
 | 6 | API design & versioning | `api_design` | the A threads |
@@ -214,8 +214,8 @@ The header is a two-column markdown table at the top of the file. Keys are lower
 | Key | Value | The skill uses it for | Spring Boot example |
 |---|---|---|---|
 | `id` | The canonical ID: lowercase letters, digits and `-`, matching the file name `frameworks/<id>.md`. Don't change it once sessions use it, because session folders and session.yaml record it. | Stack resolution, the session folder name, `framework:` in session.yaml, INDEX.md | `spring-boot` |
-| `aliases` | Other tokens that resolve to this file, lowercase, with no spaces. An alias may contain `/` (e.g. `net/http`), because a stack token is split on its first `/` only. Each alias is unique across `frameworks/`. If there's no other alias, repeat the `id`. | Stack resolution | `spring, springboot` |
-| `display` | The framework's name as written in prose | `{Framework}` in CHALLENGE.md and Part 2; the Dim-3 name ("`<display>` implementation") in FEEDBACK.md; the Title and Stack lines of the role block | `Spring Boot` |
+| `aliases` | Other tokens that resolve to this file, lowercase. An alias can't contain a space, because the arguments are split on spaces; the space after each comma only separates the list. An alias may contain `/` (e.g. `net/http`), because a stack token is split on its first `/` only. Each alias is unique across `frameworks/`. If there's no other alias, repeat the `id`. | Stack resolution | `spring, springboot` |
+| `display` | The framework's name as written in prose | `{Framework}` in CHALLENGE.md and Part 2, and in the Dim-3 name ("`{Framework}` implementation") in FEEDBACK.md; the Title and Stack lines of the role block | `Spring Boot` |
 | `languages` | The language **IDs** (not aliases) this framework pairs with. A pair is supported only if both files exist and this row names the language. | Stack resolution; listing the supported pairs | `java` |
 | `part2_noun` | What Part 2 builds, as a noun phrase that reads naturally after "Expose it as a" | The Part 2 heading and intro in CHALLENGE.md | `Spring Boot REST API` |
 | `in_process_test` | The in-process HTTP test: its tool and harness | The in-process test sketch in REFERENCE-SOLUTION.md; T2 | `@WebMvcTest + MockMvc` |
@@ -223,10 +223,10 @@ The header is a two-column markdown table at the top of the file. Keys are lower
 
 **Values.** Each value is one line of raw text, with no backticks and no `|`, because the skill reads values literally. (A value like `@WebMvcTest` may render oddly on GitHub, and that's fine.) Separate list items with a comma and a space. No value may be empty.
 
-**Grep contract.** The skill finds stacks with:
+**Grep contract.** SKILL.md finds stacks with:
 
 ```bash
-grep -E '^\| (id|aliases|languages) \|' references/{languages,frameworks}/[!_]*.md
+grep -E '^\| (id|aliases|languages) \|' ${CLAUDE_SKILL_DIR}/references/{languages,frameworks}/[!_]*.md
 ```
 
 - Write the `id`, `aliases` and `languages` rows exactly as `| key | value |`, with one space on each side of every cell.
@@ -322,7 +322,7 @@ Keep every heading in the skeleton, spelled exactly, because the skill looks sec
 
 ### Dim-3 anchor
 
-- **Used:** when scoring "`<display>` implementation (Part 2 code)" (`framework_impl`).
+- **Used:** when scoring "`{Framework}` implementation (Part 2 code)" (`framework_impl`).
 - **Write:** 1–3 sentences on what a 3 (Principal) looks like in this framework, naming its idioms. The core's neutral anchor already covers:
   - a thin HTTP layer that reuses Part 1;
   - DTOs and validation at the edge;
