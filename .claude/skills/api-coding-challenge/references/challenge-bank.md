@@ -488,7 +488,7 @@ Each follow-up thread has its own heading, numbered F1, F2, … across the sessi
 
 ```
 
-If the candidate skips a question, record their answer as `**A (you):** _skipped_`.
+If the candidate replies "skip", "next" or "wrap up" to a question, record their answer as `**A (you):** _skipped_`, `_next_` or `_wrap up_`.
 
 ### Debrief notes (appended at the end)
 

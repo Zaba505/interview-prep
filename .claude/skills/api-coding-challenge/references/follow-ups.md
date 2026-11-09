@@ -154,7 +154,7 @@
   - a concurrency test for stateful components
 
 ### T2: Testing the web layer and integration
-- **Opener:** "How do you test your controller, validation and error responses? And the persistence layer?"
+- **Opener:** "How do you test your HTTP layer, validation and error responses? And the persistence layer?"
 - **Strong Principal answer includes:**
   - an in-process HTTP test of the web layer, with the domain service faked
   - asserting status, headers and the problem-details body
