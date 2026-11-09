@@ -101,7 +101,7 @@ The candidate reuses finished sessions as study material, so every question and 
 
 Resolve the stack (§ Stack), then load the layers.
 
-- **Empty:** don't start a session. List the in-progress sessions (`grep -l '^status: in-progress' <practice>/*/session.yaml`), the supported pairs and the last-used stack (the newest session folder's session.yaml). Ask for a stack, plus an optional shape or idea, or `review <folder>`, and resolve the reply as arguments.
+- **Empty:** don't start a session. List the in-progress sessions (`grep -ls '^status: in-progress' <practice>/*/session.yaml`), the supported pairs and the last-used stack (the newest session folder's session.yaml). Ask for a stack, plus an optional shape or idea, or `review <folder>`, and resolve the reply as arguments.
 - **`review <folder> abandon`:** if session.yaml doesn't have `status: in-progress`, say so and stop. Otherwise load `challenge-bank.md`, identify the seed CHALLENGE.md was mutated from (`none` for a fresh design), add `seed: <id>` to session.yaml and set `status: abandoned`. Confirm in chat and stop.
 - **`review <folder>`:** resume or assess an existing session.
   1. If CHALLENGE.md doesn't exist, say so and stop.
@@ -112,7 +112,7 @@ Resolve the stack (§ Stack), then load the layers.
 ## Phase 1: Set up the challenge
 
 1. Run `date '+%Y-%m-%d %H:%M %Z'` and `date +%s` for the start time and start epoch.
-2. **Rotation.** Read only `<practice>/INDEX.md` and the output of `grep -E '^(status|language|framework|shape|seed):' <practice>/*/session.yaml`; either may be missing.
+2. **Rotation.** Read only `<practice>/INDEX.md` and the output of `grep -sE '^(status|language|framework|shape|seed):' <practice>/*/session.yaml`; either may be missing.
    - If a `complete` session has no INDEX.md row (an interrupted debrief), regenerate INDEX.md first, as in debrief step 3.
    - **Shape,** unless an argument chose one: the least-practiced shape among this stack's `complete` sessions, with ties broken by the count across all stacks.
    - **Seed:** never reuse one within this stack. A seed is used once a `complete` or `abandoned` session of this stack records it. Prefer seeds no stack has used. If the shape has no unused seed in this stack, design a fresh problem.
