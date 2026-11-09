@@ -2,7 +2,7 @@
 
 ## Building the private rubric (at the start of Phase 3)
 
-Work from CHALLENGE.md, the seed it was mutated from (if any) in `challenge-bank.md`, and the candidate's code. Keep the result in your working context only. It reaches disk only through the debrief (FEEDBACK.md and the TRANSCRIPT.md annotations).
+Work from CHALLENGE.md, the seed it was mutated from (if any) in `challenge-bank.md`, and the candidate's code. Keep the result in your working context only. It reaches disk only through the debrief (FEEDBACK.md, session.yaml and the TRANSCRIPT.md annotations).
 
 Cover these points:
 - **Expected Part 1 approach:** the approach and complexity of each core operation.
@@ -50,18 +50,20 @@ Score each one from 1 to 4.
 - **3, Principal:** complete and proactive. Names trade-offs and failure modes unprompted and connects them to consumers and operations.
 - **4, exceptional:** everything in 3, plus teaching. Offers alternatives with crisp selection criteria, anticipates the next question, and would raise the team's bar.
 
-| # | Dimension | What a 3 (Principal) looks like |
-|---|---|---|
-| 1 | Problem solving & correctness | Clarifies before coding. Correct on all planted edges, whether asked about or handled. States complexity. Picks the right data structures. |
-| 2 | Code quality & modeling | Readable names and small methods. Immutability and records where it fits. Pure logic separated from state, time and IO (injected `Clock`). Abstractions only where extension is likely. |
-| 3 | Spring implementation (Part 2 code) | Clean controller → service → domain layering that reuses Part 1. DTOs plus Bean Validation. `@RestControllerAdvice` producing a consistent `ProblemDetail`. Correct status codes. Constructor injection. Thread-safe singleton state. The twist handled deliberately. |
-| 4 | Communication | Asks design-shaping questions and states assumptions. Gives a crisp walkthrough. Answers are structured (conclusion first, then mechanics), and the candidate takes pushback well. |
-| 5 | Performance | See `follow-ups.md` § Performance signals. |
-| 6 | API design & versioning | See § API design & versioning. |
-| 7 | Testing (unit + functional) | See § Testing. Live functional testing in a lower environment carries the most weight. |
-| 8 | Security | See § Security. Object-level authz (BOLA) is the key discriminator. |
-| 9 | Observability | See § Observability. |
-| 10 | Resilience & scale-out | See § Resilience & scale-out. |
+The **Key** column is the `score_<key>` name used in session.yaml.
+
+| # | Dimension | Key | What a 3 (Principal) looks like |
+|---|---|---|---|
+| 1 | Problem solving & correctness | `correctness` | Clarifies before coding. Correct on all planted edges, whether asked about or handled. States complexity. Picks the right data structures. |
+| 2 | Code quality & modeling | `code_quality` | Readable names and small methods. Immutability and records where it fits. Pure logic separated from state, time and IO (injected `Clock`). Abstractions only where extension is likely. |
+| 3 | Spring implementation (Part 2 code) | `framework_impl` | Clean controller → service → domain layering that reuses Part 1. DTOs plus Bean Validation. `@RestControllerAdvice` producing a consistent `ProblemDetail`. Correct status codes. Constructor injection. Thread-safe singleton state. The twist handled deliberately. |
+| 4 | Communication | `communication` | Asks design-shaping questions and states assumptions. Gives a crisp walkthrough. Answers are structured (conclusion first, then mechanics), and the candidate takes pushback well. |
+| 5 | Performance | `performance` | See `follow-ups.md` § Performance signals. |
+| 6 | API design & versioning | `api_design` | See § API design & versioning. |
+| 7 | Testing (unit + functional) | `testing` | See § Testing. Live functional testing in a lower environment carries the most weight. |
+| 8 | Security | `security` | See § Security. Object-level authz (BOLA) is the key discriminator. |
+| 9 | Observability | `observability` | See § Observability. |
+| 10 | Resilience & scale-out | `resilience` | See § Resilience & scale-out. |
 
 ## Principal-bar signals (cross-cutting)
 
@@ -159,22 +161,69 @@ Each question, your verbatim answer, and a strong Principal answer are in [TRANS
 3. **<Topic>**: …
 ```
 
-## practice/INDEX.md
+## session.yaml
 
-Create the file with this header if it's missing, then append one row per completed session:
+`<session-dir>/session.yaml` is the session's single machine-readable record. A completed one looks like this:
 
-```markdown
-# Practice index
-
-| Date | Challenge | Shape | Verdict | Weakest areas | Topics |
-|---|---|---|---|---|---|
+```yaml
+skill: api-coding-challenge
+date: 2026-11-08
+title: "Hot-desk reservations"
+status: complete
+language: java
+framework: spring-boot
+shape: stateful
+seed: S3
+verdict: Lean Hire
+topics: "interval overlap, 409 vs 422, BOLA on cancel, live functional tests"
+score_correctness: 3
+score_code_quality: 3
+score_framework_impl: 3
+score_communication: 3
+score_performance: 3
+score_api_design: 3
+score_testing: 3
+score_security: 2
+score_observability: 2
 ```
 
-Example row:
+Here Resilience was Not assessed, so `score_resilience` is absent.
+
+**Format.** These rules keep the one-command lookups in the root `CLAUDE.md` working, e.g. `grep -lE '^score_security: [12]$'`.
+- Write one `key: value` per line, in the order above, with no comments.
+- Double-quote `title` and `topics`, and nothing else.
+- **`status`:** `in-progress`, `complete` or `abandoned`.
+- **`shape`:** `stateful`, `collections` or `modeling`.
+- **`seed`:** the ID of the seed the problem was mutated from (`C1`–`C5`, `S1`–`S5`, `M1`–`M5`), or `none` for a fresh design.
+- **`verdict`:** one of the five verdicts above, spelled exactly as in the table.
+- **`topics`:** 3–6 comma-separated keywords a future you would search for.
+- **`score_<key>`:** an integer from 1 to 4, using the Key column of the Dimensions table. A Not assessed dimension gets no key.
+
+**Who writes what:**
+
+| When | Writes |
+|---|---|
+| Phase 1 | `skill`, `date`, `title`, `status: in-progress`, `language`, `framework`, `shape` |
+| Debrief | `seed`, `verdict`, `topics`, every `score_<key>`, then `status: complete` |
+| `review <folder> abandon` | `seed`, then `status: abandoned` |
+
+Never write the seed in Phase 1 or in CHALLENGE.md, because it points the candidate at the planted edge cases.
+
+## INDEX.md
+
+`<session-dir>/../INDEX.md` is this skill's study index, with one row per `complete` session. **Regenerate the whole file** at every debrief; never append to it. That way it can't go stale or out of order.
+
+To regenerate:
+1. List the completed sessions with `grep -l '^status: complete$' <session-dir>/../*/session.yaml`. Folder names start with the ISO date, so the glob order is date order.
+2. Read each listed session.yaml and build one row from it, in that order.
+3. Write the file: the header below, then the rows. In-progress and abandoned sessions get no row.
 
 ```markdown
-| 2026-11-08 | [Room booking](2026-11-08-room-booking/) | Stateful | Lean Hire | Observability, Resilience | interval overlap, 409 vs 422, BOLA on cancel, live functional tests |
+| Date | Session | Verdict | Language | Framework | Shape | Seed | Below bar | Topics |
+|---|---|---|---|---|---|---|---|---|
+| 2026-11-08 | [Hot-desk reservations](2026-11-08-java-spring-boot-hot-desk-reservations/) | Lean Hire | java | spring-boot | stateful | S3 | Security (2), Observability (2) | interval overlap, 409 vs 422, BOLA on cancel, live functional tests |
 ```
 
-- **Weakest areas:** the two lowest-scoring dimensions. Break ties toward the follow-up categories.
-- **Topics:** 3–6 keywords a future you would search for.
+- **Session:** the `title`, linked to its folder.
+- **Date, Verdict, Language, Framework, Shape, Seed, Topics:** copied from session.yaml.
+- **Below bar:** every dimension scored 2 or lower, in Dimensions-table order, each with its score. Write `—` if there are none. List all of them, because a "two lowest" rule would hide a 2 whenever two other dimensions scored 1.
