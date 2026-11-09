@@ -213,7 +213,7 @@ The header is a two-column markdown table at the top of the file. Keys are lower
 
 | Key | Value | The skill uses it for | Spring Boot example |
 |---|---|---|---|
-| `id` | The canonical ID: lowercase letters, digits and `-`, matching the file name `frameworks/<id>.md`. Don't change it once sessions use it, because session folders and session.yaml record it. | Stack resolution, the session folder name, `framework:` in session.yaml, INDEX.md | `spring-boot` |
+| `id` | The canonical ID: lowercase letters, digits and `-`, matching the file name `frameworks/<id>.md`. Don't change it once sessions use it, because session folders, session.yaml and CHALLENGE.md record it. | Stack resolution, the session folder name, `framework:` in session.yaml, the Framework row of CHALLENGE.md's header, INDEX.md | `spring-boot` |
 | `aliases` | Other tokens that resolve to this file, lowercase. An alias can't contain a space, because the arguments are split on spaces; the space after each comma only separates the list. An alias may contain `/` (e.g. `net/http`), because a stack token is split on its first `/` only. Each alias is unique across `frameworks/`. If there's no other alias, repeat the `id`. | Stack resolution | `spring, springboot` |
 | `display` | The framework's name as written in prose | `{Framework}` in CHALLENGE.md and Part 2, and in the Dim-3 name ("`{Framework}` implementation") in FEEDBACK.md; the Title and Stack lines of the role block | `Spring Boot` |
 | `languages` | The language **IDs** (not aliases) this framework pairs with. A pair is supported only if both files exist and this row names the language. | Stack resolution; listing the supported pairs | `java` |

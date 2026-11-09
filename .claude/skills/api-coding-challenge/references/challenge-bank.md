@@ -1,6 +1,6 @@
 # Challenge bank
 
-This bank is stack-neutral. The `{…}` slots are filled from the layer headers, as SKILL.md § Files and paths describes, and the layer sections named below add the stack's terms. When a layer's Seed lines restate a seed field in the stack's terms, prefer that wording in CHALLENGE.md.
+This bank is stack-neutral. The `{…}` slots are filled from the layer headers, as SKILL.md § Stack describes, and the layer sections named below add the stack's terms. When a layer's Seed lines restate a seed field in the stack's terms, prefer that wording in CHALLENGE.md.
 
 ## Design rules
 
@@ -342,6 +342,9 @@ This bank is stack-neutral. The `{…}` slots are filled from the layer headers,
 
 | | |
 |---|---|
+| Skill | api-coding-challenge |
+| Language | <language id> |
+| Framework | <framework id> |
 | Shape | <Collection processing / Stateful component / Domain modeling> |
 | Started | <YYYY-MM-DD HH:MM TZ> |
 | Start epoch | <epoch seconds> |
@@ -495,4 +498,10 @@ If the candidate skips a question, record their answer as `**A (you):** _skipped
 ### Clarifying questions worth asking
 
 - **<question>**: <why it matters / how it changes the design>
+
+### Missing layer sections
+
+- `<languages|frameworks>/<id>.md` § <section>: <what the session did without it>
 ```
+
+Add the Missing layer sections heading only when a section the session needed was absent from a layer. A section that says `none` or `N/A` isn't missing.

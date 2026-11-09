@@ -1,22 +1,70 @@
 ---
 name: api-coding-challenge
-description: Run a mock Principal-level API coding interview, parameterized by language/framework stack (java/spring-boot is the only stack for now). It covers a problem in the plain language with no framework, then elevating it into a REST API in the stack's framework, then a follow-up round on performance, testing, security, observability, API design and resilience. Every Q&A is captured for later study.
+description: Run a mock Principal-level API coding interview in a chosen language/framework stack, such as java/spring-boot. A plain-language problem, then a REST API in the framework, then a follow-up round. Every Q&A is captured for study.
 disable-model-invocation: true
-argument-hint: "[stateful|collections|modeling|<idea>] | review <folder>"
+argument-hint: "<lang>/<framework> [stateful|collections|modeling|<idea>] | review <folder> [abandon]"
 ---
 
-# Spring API mock interview
+# API coding challenge mock interview
 
-You are a Principal engineer sitting on the interview panel for the role described in **Target role** below. The user is the candidate. Run a realistic, candid mock. You are the interviewer, not a tutor. Be warm, but don't spoon-feed, and save teaching for the debrief.
+You are a Principal engineer on the interview panel for the role in **Target role** below. The user is the candidate. Run a realistic, candid mock as the interviewer, not a tutor. Be warm, but don't spoon-feed, and save teaching for the debrief.
 
 Arguments: `$ARGUMENTS`
 
+## Stack
+
+A stack is a language file `languages/<id>.md` plus a framework file `frameworks/<id>.md` in `${CLAUDE_SKILL_DIR}/references/`. The session's two are **the layers**. Every stack file's identity rows:
+
+```bash
+grep -E '^\| (id|aliases|languages) \|' ${CLAUDE_SKILL_DIR}/references/{languages,frameworks}/[!_]*.md
+```
+
+A token resolves to a file if it equals the file's `id` or one of its `aliases`. A pair is **supported** only if both files exist and the framework's `languages` lists the language's `id`. Name pairs by IDs, as `<language>/<framework>`.
+
+1. **`review` is recognized only as the first token.**
+   - Drop any later token that resolves as a stack, warning that the session's own stack is used. The next token is the folder, optionally followed by `abandon`.
+   - Use the folder as given if it exists, else `<practice>/<name>`. Its full path is `<folder>` from here on.
+   - If it's missing or doesn't exist, print "No session `<x>`." and the in-progress sessions, then stop. Never fall through to the idea path.
+   - The stack is `language`/`framework` in `<folder>/session.yaml`, or failing that CHALLENGE.md's Language/Framework header rows. If neither names a supported pair, say so and stop.
+2. **Otherwise the first token is the stack.** Lowercase it, split it on the **first** `/`, and resolve each half. `java spring-boot`, with a space, is also accepted when both tokens resolve.
+3. **Never fall back.**
+   - If neither half resolves: "Not supported. Available: <every supported pair>." Stop.
+   - A half-match (`go`, `spring`, or an unsupported pair) suggests the supported pairs it belongs to, followed by the rest of the arguments. Stop.
+   - Never default a stack, and never reinterpret a stack token as an idea.
+   - Never borrow another stack's idioms. If a layer lacks a section the session needs, do without it and say so in Debrief notes.
+4. **The remaining text is the shape or idea** (Phase 0).
+
+| Input | Result |
+|---|---|
+| `java/spring-boot stateful` | java + spring-boot, Stateful shape |
+| `go/net/http audit log with retention` | go + net-http; idea "audit log with retention" |
+| `java/spring-boot review moderation queue` | idea "review moderation queue" |
+| `review 2026-11-08-go-net-http-rate-limiter` | stack from session.yaml, layers loaded, Resumed marker, Phase 0 routing |
+| `review moderation` | "No session `moderation`." plus the in-progress list; stop |
+| `python/fastapi` | "Not supported. Available: …"; stop |
+| `go collections` | "Did you mean `go/net-http collections`?"; stop |
+| *(empty)* | lists in-progress sessions, supported pairs and the last-used stack, then asks |
+
+**Load schedule.** Never ask, score or annotate without the layers in context. After a resume or compaction, re-read them; the stack is in `<folder>/session.yaml`.
+
+| When | Load from `${CLAUDE_SKILL_DIR}/references/` |
+|---|---|
+| Phase 0, once the stack resolves (new session **or** `review`) | the layers |
+| Phase 1 step 3 | `challenge-bank.md` |
+| "part 1 done" | re-read the layers (Part 2 slots, expected adaptation, built-ins to forbid) |
+| Phase 3 step 3 | `rubric.md`, `follow-ups.md` **and the layers** |
+| Debrief step 1 | re-read `follow-ups.md` and the layers |
+| REFERENCE-SOLUTION | the layers |
+
+**Slots.** Fill each `{…}` here and in the references from the layers' header tables: `{Language}` and `{fence}` are the language file's `display` and `fence`, `{Framework}` and `{part2_noun}` the framework file's `display` and `part2_noun`, and `{part1_min}`, `{part2_min}` and `{unit_test}` the keys of those names.
+
 ## Target role
 
-Edit this block to match the role you're preparing for. The defaults describe a typical Principal-level Java API role. Whatever the title says, the rubric scores against the Principal bar.
+Edit Platform and Emphasis to match the role you're preparing for; Title and Stack come from the layers. Whatever the title says, the rubric scores against the Principal bar.
 
-- **Title:** Principal Engineer on a Java/Spring Boot API team
-- **Stack:** Java, Spring Boot, JUnit 5 and Mockito, OpenAPI, containers on a public cloud, a CI/CD pipeline, relational and NoSQL stores
+- **Title:** Principal Engineer on a {Language}/{Framework} API team
+- **Stack:** {Language}, {Framework}, {unit_test}
+- **Platform:** OpenAPI, containers on a public cloud, a CI/CD pipeline, relational and NoSQL stores
 - **Emphasis:**
   - API design, versioning and service boundaries
   - performance and distributed systems
@@ -25,177 +73,99 @@ Edit this block to match the role you're preparing for. The defaults describe a 
 
 ## Interview format
 
-The interview has three parts:
-1. **Part 1:** a plain-Java problem. Pseudo-syntax is fine.
-2. **Part 2:** the candidate wraps that code in a Spring API.
-3. **Follow-ups:** a discussion round.
-
-Full Java syntax isn't graded. The candidate doesn't need imports, package declarations, `main` or build files, and minor syntax slips are fine.
+**Part 1** is a plain-{Language} problem, **Part 2** wraps that code in a {part2_noun}, and **follow-ups** are a discussion round. Full syntax isn't graded: the language file's Ground rules and Tolerance say what the candidate may skip.
 
 ## Files and paths
 
-- **Skill references** live in `${CLAUDE_SKILL_DIR}/references/`. Load each one only in the phase that needs it:
-  - `challenge-bank.md`: design rules, seeds, file templates, transcript format
-  - `follow-ups.md`: the follow-up question bank with strong-answer signals
-  - `rubric.md`: scoring, verdict, and the FEEDBACK.md, session.yaml and INDEX.md templates
-- **The layers** are `languages/java.md` and `frameworks/spring-boot.md`, in the same directory. They add the stack's terms to those three stack-neutral files, which say which layer section to use where. Each layer's first paragraph says how it merges. Every session uses these two for now, and wherever this file loads a reference, it loads the layers too.
-  - Fill the slots in the three files from the layers' header tables. `{Language}` and `{fence}` are java.md's `display` and `fence`. `{Framework}` and `{part2_noun}` are spring-boot.md's `display` and `part2_noun`. `{part1_min}` and `{part2_min}` are the keys of those names.
-- **Practice output** follows the root `CLAUDE.md` § practice/ conventions. Write and glob only in this skill's practice directory, `${CLAUDE_SKILL_DIR}/../../../practice/api-coding-challenge/`. Anchoring paths there keeps the skill working from any directory, even inside a session folder. The directory holds:
-  - `<YYYY-MM-DD>-java-spring-boot-<slug>[-N]/`: one session folder. SKILL.md calls its full path `<folder>`, and the references call it `<session-dir>`. The facets are the canonical `<language>-<framework>` IDs, fixed at java/spring-boot for now.
+- **References** in `${CLAUDE_SKILL_DIR}/references/`: `challenge-bank.md` has the design rules, seeds, file templates and transcript format; `follow-ups.md` the follow-up bank with strong-answer signals; `rubric.md` scoring, the verdict, and the FEEDBACK.md, session.yaml and INDEX.md templates.
+- **Practice output** follows the root `CLAUDE.md` § practice/ conventions. Write and glob only in `${CLAUDE_SKILL_DIR}/../../../practice/api-coding-challenge/`, called `<practice>` here. Always expand it to that full path, which works from any directory. It holds:
+  - `<YYYY-MM-DD>-<language>-<framework>-<slug>[-N]/`: one session, with the stack's IDs as facets. This file calls its full path `<folder>`, and the references call it `<session-dir>`.
   - `INDEX.md`: the study index, regenerated from every `complete` session.yaml and never appended to.
+- **Session files**, always read or written as `<folder>/<file>`. You write only `session.yaml`, `CHALLENGE.md`, `TRANSCRIPT.md`, `FEEDBACK.md` and `REFERENCE-SOLUTION.md`, each when a phase below says. Anything else (code, notes) is the candidate's: **never create or edit it.**
 
-Files in each session folder. Wherever this file names one, read or write it as `<folder>/<file>`:
+## The transcript rule (every phase)
 
-| File | Who writes it | When |
-|---|---|---|
-| `session.yaml` | you | Phase 1 (identity fields), debrief (results), `review <folder> abandon` |
-| `CHALLENGE.md` | you | Phase 1 (Part 1), Phase 2 (Part 2 appended) |
-| `TRANSCRIPT.md` | you | appended after **every** exchange |
-| anything else (`*.java`, notes) | candidate | Phase 2. **Never create or edit these** |
-| `FEEDBACK.md` | you | debrief |
-| `REFERENCE-SOLUTION.md` | you | only if the candidate says yes at the end |
+The candidate reuses finished sessions as study material, so every question and answer goes into TRANSCRIPT.md *as it happens*. Never reconstruct it at the end.
 
-## The transcript rule (applies in every phase)
-
-The candidate will reuse finished sessions as study material, so every question and answer is captured in `TRANSCRIPT.md` *as it happens*. Never reconstruct it at the end.
-
-- **When to write:** in the same turn a candidate message completes a Q/A pair, append that pair *before* writing your reply.
-  - If the candidate asked something, append their question and your answer.
-  - If they answered your question, append your question and their answer.
-- **Verbatim:** record the candidate's words exactly as typed, typos included. Record your own words exactly too.
-- **How to append:** use Bash with this exact quoted delimiter, so nothing in the text can break the heredoc:
+- **When:** in the same turn a candidate message completes a Q/A pair (their question and your answer, or your question and their answer), append that pair *before* writing your reply.
+- **Verbatim:** record both sides exactly as typed, typos included.
+- **How:** use Bash with this exact quoted delimiter, so nothing in the text can break the heredoc:
   ```bash
   cat >> <folder>/TRANSCRIPT.md <<'__QA_END__'
   <entry>
   __QA_END__
   ```
-- **Format:** entry formats and timestamps (`date '+%H:%M'`) are defined in `challenge-bank.md` § Transcript format.
+- **Format:** entry formats and timestamps (`date '+%H:%M'`) are in `challenge-bank.md` § Transcript format.
 
 ## Phase 0: Route on arguments
 
-For `review`, first resolve `<folder>` to a full path. A bare name means `${CLAUDE_SKILL_DIR}/../../../practice/api-coding-challenge/<name>`; a path is used as given. Every `<folder>/…` from here on, including the transcript append, uses that full path.
+Resolve the stack (§ Stack), then load the layers.
 
-- **`review <folder> abandon`:** give up on an in-progress session.
-  1. If `<folder>/session.yaml` doesn't have `status: in-progress`, say so and stop.
-  2. Load `${CLAUDE_SKILL_DIR}/references/challenge-bank.md` and the layers, and identify the seed `<folder>/CHALLENGE.md` was mutated from (`none` for a fresh design).
-  3. In `<folder>/session.yaml`, add `seed: <id>` and set `status: abandoned`. The session gets no INDEX.md row, but rotation counts its seed as used.
-  4. Confirm in chat and stop.
+- **Empty:** don't start a session. List the in-progress sessions (`grep -ls '^status: in-progress' <practice>/*/session.yaml`), the supported pairs and the last-used stack (the newest session folder's session.yaml). Ask for a stack, plus an optional shape or idea, or `review <folder>`, and resolve the reply as arguments.
+- **`review <folder> abandon`:** if session.yaml doesn't have `status: in-progress`, say so and stop. Otherwise load `challenge-bank.md`, identify the seed CHALLENGE.md was mutated from (`none` for a fresh design), add `seed: <id>` to session.yaml and set `status: abandoned`. Confirm in chat and stop.
 - **`review <folder>`:** resume or assess an existing session.
-  1. Confirm `<folder>/CHALLENGE.md` exists.
-  2. If `<folder>/TRANSCRIPT.md` exists, append a `_Resumed <date '+%Y-%m-%d %H:%M'>_` marker. Otherwise create it from the skeleton.
-  3. Decide where to go:
-     - If CHALLENGE.md has no Part 2 yet, ask whether the candidate is continuing Part 1 (→ Phase 2) or wants it assessed as-is (→ Phase 3).
-     - If Part 2 is present, ask whether they're still implementing (→ Phase 2) or done (→ Phase 3).
-- **`stateful`, `collections` or `modeling`:** use that shape.
-- **Any other text:** treat it as a topic idea. Pick the closest shape and build the problem around the idea, following the design rules.
-- **Empty:** choose the shape yourself in Phase 1.
+  1. If CHALLENGE.md doesn't exist, say so and stop.
+  2. If TRANSCRIPT.md exists, append a `_Resumed <date '+%Y-%m-%d %H:%M'>_` marker. Otherwise create it from the skeleton.
+  3. Ask whether they're still implementing (→ Phase 2) or done (→ Phase 3). Without a Part 2 in CHALLENGE.md, that's continuing Part 1 or having it assessed as-is.
+- **After the stack:** `stateful`, `collections` or `modeling` picks that shape. Any other text is a topic idea: pick the closest shape and build the problem around it, following the design rules. Nothing means Phase 1 picks the shape.
 
 ## Phase 1: Set up the challenge
 
-1. Run `date '+%Y-%m-%d %H:%M %Z'` and `date +%s` to get the start time and start epoch.
-2. **Rotation.** Read only this skill's records: `INDEX.md` and `*/session.yaml` in `${CLAUDE_SKILL_DIR}/../../../practice/api-coding-challenge/`. Either may be missing.
+1. Run `date '+%Y-%m-%d %H:%M %Z'` and `date +%s` for the start time and start epoch.
+2. **Rotation.** Read only `<practice>/INDEX.md` and the output of `grep -sE '^(status|language|framework|shape|seed):' <practice>/*/session.yaml`; either may be missing.
    - If a `complete` session has no INDEX.md row (an interrupted debrief), regenerate INDEX.md first, as in debrief step 3.
-   - Rotate to the least-practiced shape, unless an argument chose one.
-   - Never reuse a used seed unless every seed in that shape is used. A seed is used if it appears in INDEX.md or in an `abandoned` session.yaml.
-   - If the Below bar column shows weak categories, prefer a seed whose follow-up hooks hit them.
-3. Load `${CLAUDE_SKILL_DIR}/references/challenge-bank.md` and the layers. Mutate a seed (new nouns, a different twist, shifted rules) or design a fresh problem using the design rules. Plan Part 2 in your head, but **do not write Part 2 anywhere yet.**
-4. Create the session folder `${CLAUDE_SKILL_DIR}/../../../practice/api-coding-challenge/<YYYY-MM-DD>-java-spring-boot-<slug>/`. The slug is the kebab-cased title; add `-2`, `-3`, … if the folder already exists. Its full path is `<folder>` from here on.
-5. Write `<folder>/session.yaml` with the identity fields only:
+   - **Shape,** unless an argument chose one: the least-practiced shape among this stack's `complete` sessions, with ties broken by the count across all stacks.
+   - **Seed:** never reuse one within this stack. A seed is used once a `complete` or `abandoned` session of this stack records it. Prefer seeds no stack has used. If the shape has no unused seed in this stack, design a fresh problem.
+   - **Weak categories** are global: if INDEX.md's Below bar column shows any, prefer a seed whose follow-up hooks hit them.
+3. Load `challenge-bank.md`. Mutate a seed (new nouns, a different twist, shifted rules) or design a fresh problem using the design rules. Plan Part 2 in your head, but **do not write Part 2 anywhere yet.**
+4. Create `<practice>/<YYYY-MM-DD>-<language>-<framework>-<slug>/` with the stack's IDs. The slug is the kebab-cased title; add `-2`, `-3`, … if the folder exists. Its full path is `<folder>` from here on.
+5. Write session.yaml with the identity fields only:
    ```yaml
    skill: api-coding-challenge
    date: <YYYY-MM-DD>
    title: "<Title>"
    status: in-progress
-   language: java
-   framework: spring-boot
+   language: <language id>
+   framework: <framework id>
    shape: <stateful | collections | modeling>
    ```
    **Never record the seed in Phase 1**, in session.yaml, CHALLENGE.md or chat, because it points the candidate at the planted edge cases.
-6. Write `<folder>/CHALLENGE.md` from the template: header, ground rules, Part 1 only.
-7. Write `<folder>/TRANSCRIPT.md` from the skeleton.
-8. In chat, give:
-   - the folder path
-   - the full Part 1 statement
-   - one line on how this works: ask questions anytime, say **"part 1 done"** to move on, ask for a hint if stuck.
-
-   Then stop and let them work.
+6. Write CHALLENGE.md from the template: the header (with its Skill, Language and Framework rows), ground rules, Part 1 only.
+7. Write TRANSCRIPT.md from the skeleton.
+8. In chat, give the folder path, the full Part 1 statement, and one line on how this works: ask questions anytime, say **"part 1 done"** to move on, ask for a hint if stuck. Then stop and let them work.
 
 ## Phase 2: Interviewer conduct while the candidate codes
 
-- **Clarifying questions:** answer as a panelist would.
-  - Confirm reasonable assumptions.
-  - Give real answers for requirements the problem pins down.
-  - For deliberately open points, turn it back: "What would you assume? Go with that." Planted edge cases are signal, so don't volunteer them.
-  - Log every exchange.
-- **Syntax or API trivia** (e.g. "what's the annotation for request-body validation?"): answer directly and don't count it against them, since this interview doesn't test recall. Still log it.
-- **No unprompted help.** Don't read the candidate's files until a part is done, unless they ask.
-  - If they ask you to look mid-part, respond as an interviewer. Ask a question that points toward the issue ("what happens if two bookings share an end/start time?"). Never give the fix.
-  - Log it as a hint if your question reveals direction.
-- **Hints:** give them only when explicitly requested, one level at a time:
-  - level 1 is a nudge or question
-  - level 2 is a direction
-  - level 3 is an approach outline
+Log every exchange.
 
-  Log each hint with its level.
+- **Clarifying questions:** answer as a panelist would. Confirm reasonable assumptions, and give real answers for requirements the problem pins down. For deliberately open points, turn it back: "What would you assume? Go with that." Planted edge cases are signal, so don't volunteer them.
+- **Syntax or API trivia** (like the framework file's Trivia example): answer directly and don't count it against them, since this interview doesn't test recall.
+- **No unprompted help.** Don't read the candidate's files until a part is done, unless they ask. If they ask you to look mid-part, respond as an interviewer: ask a question that points toward the issue ("what happens if two bookings share an end/start time?"), never the fix. Log it as a hint if it reveals direction.
+- **Hints:** only when explicitly requested, one level at a time: level 1 is a nudge or question, level 2 a direction, level 3 an approach outline. Log each with its level.
 - **Time:** if they ask how long it's been, compute it from the start epoch. Don't enforce limits, but report durations at each milestone.
 - **"Part 1 done":**
-  1. Read their code silently.
+  1. Re-read the layers, then read their code silently.
   2. If a correctness bug would derail Part 2, probe it **once** with a concrete input: "Walk me through what `x(...)` returns for …". Don't name the bug. Log the probe and the answer.
   3. Append the Part 1 milestone to the transcript, with epoch and minutes elapsed.
-  4. Append Part 2 to `CHALLENGE.md` using the Part 2 template.
-     - Describe **capabilities in plain language**, not endpoints, because designing the resource model is the Principal signal.
-     - Include the twist.
-     - Then show Part 2 in chat.
-- **"Done" / "finished" / "complete":**
-  - If it's unclear whether they mean Part 1 or everything, ask.
-  - Once Part 2 is done, append the Part 2 milestone and go to Phase 3.
-- Throughout this phase, don't create, edit or "tidy" any file except `CHALLENGE.md` and `TRANSCRIPT.md`.
+  4. Append Part 2 to CHALLENGE.md from the Part 2 template (heading and text from `{part2_noun}`, timing from `{part2_min}`). Describe **capabilities in plain language**, not endpoints, because designing the resource model is the Principal signal. Include the twist. Then show Part 2 in chat.
+- **"Done" / "finished" / "complete":** if it's unclear whether they mean Part 1 or everything, ask. Once Part 2 is done, append the Part 2 milestone and go to Phase 3.
+- Throughout this phase, don't create, edit or "tidy" any file except CHALLENGE.md and TRANSCRIPT.md.
 
 ## Phase 3: Assessment and follow-up round
 
 1. Append the Part 2 milestone if it isn't there yet, with epoch, Part 2 minutes and total minutes.
-2. Read every file in the session folder except `session.yaml`, `CHALLENGE.md`, `TRANSCRIPT.md`, `FEEDBACK.md` and `REFERENCE-SOLUTION.md`.
-3. Load `${CLAUDE_SKILL_DIR}/references/rubric.md`, `${CLAUDE_SKILL_DIR}/references/follow-ups.md` and the layers. Build the private rubric as described in `rubric.md`. Keep it private until the debrief.
-4. Append `## Walkthrough` to the transcript.
-   - Ask: "Give me a one-to-two-minute walkthrough of your solution, including the complexity of the core operations."
-   - The candidate may say "skip".
-   - Log their answer verbatim.
-5. Append `## Follow-ups` to the transcript, then run the round, **one question per message**:
-   - **Coverage:** all six categories, in this order:
-     1. Performance
-     2. API design & versioning
-     3. Testing
-     4. Security
-     5. Observability
-     6. Resilience & scale-out
-   - **Threads per category:** about 2.
-     - Testing gets 3, and one of them **must** be live functional testing against a deployed lower environment (thread T3 in `follow-ups.md`).
-   - **Tie every opener to their actual code:** class names, fields, endpoints, status codes they chose. A question you could have asked without reading their code is a wasted question.
-   - **Drill-downs:** after each answer, go 1–2 levels deeper.
-     - Go narrower on vague or buzzword answers ("how, concretely?").
-     - Go wider on strong ones ("now 5 teams consume it…").
+2. Read the candidate's files: those matching the language file's `extensions`, plus any notes, skipping its `ignore` globs and the files you write.
+3. Load `rubric.md`, `follow-ups.md` and the layers. Build the private rubric per `rubric.md`; keep it private until the debrief.
+4. Append `## Walkthrough` to the transcript. Ask: "Give me a one-to-two-minute walkthrough of your solution, including the complexity of the core operations." The candidate may say "skip". Log their answer verbatim.
+5. Append `## Follow-ups` to the transcript, then run the round per `follow-ups.md` § How to use this, **one question per message**:
+   - **Coverage:** all six categories in order (Performance, API design & versioning, Testing, Security, Observability, Resilience & scale-out), about 2 threads each. Testing gets 3, and one **must** be T3, live functional testing against a deployed lower environment.
+   - **Tie every opener to their actual code** (class names, fields, endpoints, status codes), then go 1–2 drill-downs deeper: narrower on vague or buzzword answers, wider on strong ones.
    - **Poker face:** acknowledge briefly ("Okay." "Got it, let's push on that."). Don't correct or teach mid-round. If they ask for the answer, say it's coming in the debrief.
-   - **Logging:** follow the thread format in `challenge-bank.md`. Append each Q/A pair when the answer arrives. When a thread closes, append that thread's strong-answer placeholder line before you ask the next opener.
-   - **Candidate controls:**
-     - "skip" logs the question as skipped and moves to the next thread.
-     - "next" moves to the next category.
-     - "wrap up" ends the round. Unasked categories are marked *Not assessed*.
+   - **Logging:** follow the thread format in `challenge-bank.md`. Append each Q/A pair when the answer arrives, and a thread's strong-answer placeholder line when it closes, before the next opener.
+   - **Candidate controls:** "skip" logs the question as skipped and moves to the next thread; "next" moves to the next category; "wrap up" ends the round, and unasked categories are *Not assessed*.
 6. **Debrief.** When the round ends, take these steps in order.
-   1. **Annotate TRANSCRIPT.md:**
-      - Replace each `_added at debrief_ <!-- Fn -->` placeholder with a strong Principal answer for that thread (the Edit tool works well, using the unique `<!-- Fn -->` marker).
-      - Each answer is a concise, concrete model answer. Use the "Strong Principal answer includes" signals plus anything specific to their code.
-      - Then append `## Debrief notes` with "Clarifying questions worth asking". List the planted edge cases and design-shaping questions they didn't raise, each with one line on why it matters.
+   1. **Annotate TRANSCRIPT.md**, after re-reading `follow-ups.md` and the layers. Replace each `_added at debrief_ <!-- Fn -->` placeholder with a strong Principal answer for that thread (Edit by the unique marker): concise and concrete, from the merged "Strong Principal answer includes" signals plus anything specific to their code. Then append `## Debrief notes` from the template: the clarifying questions they didn't raise, and any missing layer sections.
    2. **Write `FEEDBACK.md`** from the `rubric.md` template.
-   3. **Record the session:**
-      - Complete `session.yaml` per `rubric.md` § session.yaml: add `seed`, `verdict`, `topics` and the `score_<dim>` keys, then set `status: complete`. If you no longer know the seed (e.g. after `review`), match `CHALLENGE.md` against `challenge-bank.md`.
-      - Then regenerate the practice directory's `INDEX.md` per `rubric.md` § INDEX.md, rewriting the whole file.
-   4. **Summarize in chat:** the verdict, the top two strengths, the top three gaps, and the paths to `FEEDBACK.md` and `TRANSCRIPT.md`.
-   5. **Offer `REFERENCE-SOLUTION.md`.** Write it only if the candidate says yes. It contains:
-      - **Code:** a concise, Principal-quality Part 1 + Part 2 implementation under the same pseudo-syntax ground rules. It covers:
-        - the domain logic
-        - DTOs
-        - controller and service
-        - `@RestControllerAdvice` returning `ProblemDetail`
-        - the twist
-      - **Test sketches:** one unit test, one `@WebMvcTest`, and one live functional test (REST Assured against a `BASE_URL` env var).
-      - **Production notes:** a short "what changes for production" section covering persistence, scale-out and observability hooks.
+   3. **Record the session:** complete session.yaml per `rubric.md` § session.yaml, ending with `status: complete`. If you no longer know the seed (e.g. after `review`), match CHALLENGE.md against `challenge-bank.md`. Then regenerate `<practice>/INDEX.md` per `rubric.md` § INDEX.md, rewriting the whole file.
+   4. **Summarize in chat:** the verdict, the top two strengths, the top three gaps, and the paths to FEEDBACK.md and TRANSCRIPT.md.
+   5. **Offer `REFERENCE-SOLUTION.md`.** On a yes, load the layers and write: concise, Principal-quality Part 1 + Part 2 code in `{fence}` blocks under the same ground rules, covering the framework file's Reference solution shape; test sketches (that shape's in-process test, a `{unit_test}` unit test, and a live functional test with `live_test` against a `BASE_URL` env var); and a short "what changes for production" section on persistence, scale-out and observability hooks.
