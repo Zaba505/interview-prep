@@ -213,7 +213,7 @@ The header is a two-column markdown table at the top of the file. Keys are lower
 
 | Key | Value | The skill uses it for | Java example |
 |---|---|---|---|
-| `id` | The canonical ID: lowercase letters, digits and `-`, matching the file name `languages/<id>.md`. Don't change it once sessions use it, because session folders and session.yaml record it. | Stack resolution, the session folder name, `language:` in session.yaml, INDEX.md, and the `languages` row of framework files | `java` |
+| `id` | The canonical ID: lowercase letters, digits and `-`, matching the file name `languages/<id>.md`. Don't change it once sessions use it, because session folders, session.yaml and CHALLENGE.md record it. | Stack resolution, the session folder name, `language:` in session.yaml, the Language row of CHALLENGE.md's header, INDEX.md, and the `languages` row of framework files | `java` |
 | `aliases` | Other tokens that resolve to this file, lowercase. An alias can't contain a space, because the arguments are split on spaces, or a `/`, because a stack token is split on its first `/`. The space after each comma only separates the list. Each alias is unique across `languages/`. If there's no other alias, repeat the `id`. | Stack resolution | `java, jdk` |
 | `display` | The language's name as written in prose | `{Language}` in CHALLENGE.md, the ground rules and Part 1; the Title and Stack lines of the role block | `Java` |
 | `fence` | The info string for fenced code blocks | Interface sketches in CHALLENGE.md; REFERENCE-SOLUTION.md | `java` |

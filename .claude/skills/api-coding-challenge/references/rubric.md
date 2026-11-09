@@ -2,7 +2,7 @@
 
 ## Building the private rubric (at the start of Phase 3)
 
-This rubric is stack-neutral. The `{…}` slots are filled from the layer headers, as SKILL.md § Files and paths describes, and the layer sections named below add the stack's terms.
+This rubric is stack-neutral. The `{…}` slots are filled from the layer headers, as SKILL.md § Stack describes, and the layer sections named below add the stack's terms.
 
 Work from CHALLENGE.md, the seed it was mutated from (if any) in `challenge-bank.md` together with both layers' Seed lines for it, and the candidate's code. Keep the result in your working context only. It reaches disk only through the debrief (FEEDBACK.md, session.yaml and the TRANSCRIPT.md annotations).
 
