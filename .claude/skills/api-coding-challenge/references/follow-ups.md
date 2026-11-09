@@ -2,13 +2,19 @@
 
 ## How to use this
 
-- **Questions are templates.** Rewrite every opener so it points at the candidate's actual code: their class names, fields, endpoints and status codes. "Your `BookingService` keeps a `HashMap<String, List<Booking>>`…" beats "How would you handle concurrency?"
+- **Questions are templates.** Rewrite every opener so it points at the candidate's actual code: their class names, fields, endpoints and status codes. "Your `BookingService` keeps every booking in one in-memory map…" beats "How would you handle concurrency?"
 - **Thread shape:** an opener, then 1–2 drill-downs chosen by the answer.
   - On vague or buzzword answers ("add a cache", "use Kafka"), go **narrower**: "Concretely, how? What's the key? What invalidates it?"
   - On strong answers, go **wider**: more replicas, more consumers, more teams, failure in the middle.
 - **Order:** Performance → API design & versioning → Testing → Security → Observability → Resilience & scale-out. That runs from the code, to the contract, to verifying it, protecting it, operating it, and finally the whole system.
 - **Budget:** about 2 threads per category. Testing gets 3, and **T3 (live functional tests) is mandatory**. If a seed's follow-up hooks fit a category, use them.
 - **Scoring only:** the "Strong Principal answer includes" bullets are for scoring and for the debrief annotations. Never read them out or hint at them during the round.
+- **This bank is stack-neutral; the layers add the stack.** For thread X, use the core thread below, then `### X` under Signals by thread ID in the language file, then `### X` in the framework file.
+  - Layer bullets and `Drill-down:` lines add to the core's.
+  - An `Opener:` line or a heading title replaces the core's, and the framework's wins if both give one.
+  - `N/A:` marks something this stack doesn't have, so don't expect it.
+  - For what a race means in this stack (P2, T4, R1), read the language file's Runtime & concurrency and the framework file's Request dispatch.
+- **Thread IDs are frozen:** P1–P6, A1–A5, T1–T4, S1–S4, O1–O5, R1–R5. The layers refer to them, so never renumber or add one.
 
 ---
 
@@ -21,28 +27,28 @@
   - "Could `<op>` be O(log n) or O(1)? What would that cost you?"
 - **Strong Principal answer includes:**
   - precise complexity per operation, and the dominant term
-  - the right structure for the access pattern: `TreeMap` floor/ceiling for intervals, a heap for top-K, hashing for grouping
+  - the right structure for the access pattern: an ordered map's floor/ceiling for intervals, a heap for top-K, hashing for grouping
   - memory as well as time
   - asks about real volumes and SLOs before optimizing, and doesn't over-engineer for scale nobody needs
 
-### P2: Concurrency inside a singleton bean
-- **Opener:** "`<Service>` is a Spring singleton holding `<field>`. What happens with 200 concurrent requests?"
+### P2: Shared mutable state under concurrent requests
+- **Opener:** "`<Service>` holds `<field>`, and every request shares it. What happens with 200 concurrent requests?"
 - **Drill-downs:**
-  - "Is `ConcurrentHashMap` enough? Walk me through `<check-then-act op>`."
+  - "Is a concurrent map enough? Walk me through `<check-then-act op>`."
   - "Where would the locking go, and what does it cost in throughput?"
 - **Strong Principal answer includes:**
   - spots the check-then-act race
-  - per-key atomicity via `compute`/`merge`, or per-key or striped locks, *not* `synchronized` on the whole service, which serializes everything
+  - per-key atomicity via an atomic per-key update, or per-key or striped locks, *not* one lock around the whole service, which serializes everything
   - immutable snapshots for read-heavy data
-  - knows that virtual threads don't fix races
-  - notes that at real scale the fix is moving state out of the JVM (a bridge to Resilience)
+  - knows that switching to lighter threads or async doesn't fix races
+  - notes that at real scale the fix is moving state out of the process (a bridge to Resilience)
 
 ### P3: Unbounded growth
 - **Opener:** "What stops `<map/list>` from growing forever?"
 - **Strong Principal answer includes:**
-  - eviction or TTL (Caffeine), bounded structures
+  - eviction or TTL, bounded structures
   - lazy vs scheduled cleanup and the trade-off between them
-  - container heap sizing (`-XX:MaxRAMPercentage`)
+  - sizing the runtime's memory to the container's limit
   - GC pressure from large maps
   - monitoring the size as a gauge
 
@@ -50,17 +56,17 @@
 - **Opener:** "This now sits on Postgres, or DynamoDB if you prefer. What does the access pattern look like, and how do you keep `<endpoint>` fast?"
 - **Strong Principal answer includes:**
   - indexes that match the queries
-  - avoiding N+1 (fetch joins, batching)
+  - avoiding N+1 (a join or a batched query instead of one query per row)
   - keyset pagination, projections and DTO queries
   - for DynamoDB: key design from the access patterns, hot partitions, GSIs
-  - Hikari pool size relative to request threads, and the DB's connection limit
+  - connection-pool size relative to request concurrency, and the DB's connection limit
 
 ### P5: Caching
 - **Opener:** "Where would you cache in this design, and how does the cache get invalidated?"
 - **Strong Principal answer includes:**
   - cache-aside vs read-through
   - TTL vs event-driven invalidation, with the staleness explicitly accepted with the product owner
-  - local (Caffeine) vs distributed (Redis)
+  - local (in-process) vs distributed (Redis)
   - stampede protection
   - HTTP caching (`ETag`/`Cache-Control`/304)
   - what must never be cached (authz-dependent responses keyed without the user)
@@ -69,10 +75,10 @@
 - **Opener:** "Under load, p99 on `<endpoint>` is 2 seconds while the average is fine. How do you find out why?"
 - **Strong Principal answer includes:**
   - reproduce with a load test (Gatling, k6)
-  - JFR or async-profiler, thread dumps, GC logs
-  - saturation metrics: Tomcat threads, Hikari pending, executor queues
+  - a profiler, thread or stack dumps, GC or runtime logs
+  - saturation metrics: busy request workers, connection-pool waiters, executor queues
   - tail-latency causes: GC pauses, lock contention, a slow dependency, pool starvation
-  - Java 21 virtual threads (`spring.threads.virtual.enabled=true`) for blocking IO, with pinning caveats
+  - cheaper concurrency for blocking IO (lightweight threads, async), with its caveats
 
 ---
 
@@ -85,7 +91,7 @@
   - nouns for resources; verbs and status codes carry the semantics
   - status codes: 201 + `Location` on create, 202 for async, 204 for an empty body, 409 for conflicts, 412 for failed preconditions
   - a reasoned position on 400 vs 422, and on 404 vs 403 (don't leak existence)
-  - one error contract for everything: RFC 9457 `ProblemDetail` from a `@RestControllerAdvice` (or `spring.mvc.problemdetails.enabled`), with stable machine-readable `type`/codes
+  - one error contract for everything: RFC 9457 problem details from one central error mapping, with stable machine-readable `type`/codes
   - DTOs that are separate from domain types
 
 ### A2: Idempotency and retries
@@ -125,7 +131,7 @@
 - **Opener:** "How do consumers learn this contract? Is it contract-first or code-first, and why?"
 - **Strong Principal answer includes:**
   - OpenAPI as the source of truth, reviewed before implementation (API design review)
-  - codegen (openapi-generator) vs springdoc code-first, with the trade-offs
+  - codegen (openapi-generator) vs generating the spec from the code, with the trade-offs
   - linting (Spectral)
   - a breaking-change diff in CI (openapi-diff)
   - publishing to a catalog or portal
@@ -138,22 +144,22 @@
 ### T1: Unit testing the Part 1 logic
 - **Opener:** "How would you unit test `<class>`? Name the first five test cases you'd write."
 - **Strong Principal answer includes:**
-  - plain JUnit 5 with no Spring context
+  - plain unit tests of the Part 1 types, with no framework or HTTP in the way
   - the planted edge cases as explicit tests
-  - `@ParameterizedTest` with `@MethodSource`/`@CsvSource`
-  - an injected `Clock` for time logic
+  - table-driven or parameterized tests for the edge-case matrix
+  - an injected clock for time logic
   - testing behavior rather than implementation
-  - Mockito only at true boundaries
-  - property-based tests for invariants (jqwik) as a bonus
-  - a concurrency test (executor + `CountDownLatch`) for stateful components
+  - mocks only at true boundaries
+  - property-based tests for invariants as a bonus
+  - a concurrency test for stateful components
 
 ### T2: Testing the web layer and integration
 - **Opener:** "How do you test your controller, validation and error responses? And the persistence layer?"
 - **Strong Principal answer includes:**
-  - `@WebMvcTest` + MockMvc, mocking the service with `@MockitoBean` (`@MockBean` before Boot 3.4)
-  - asserting status, headers and the ProblemDetail body
-  - `@DataJpaTest`, or `@SpringBootTest` + Testcontainers for a real DB or Redis
-  - context caching and avoiding a full context for everything
+  - an in-process HTTP test of the web layer, with the domain service faked
+  - asserting status, headers and the problem-details body
+  - integration tests against a real DB or Redis via Testcontainers
+  - keeping test start-up cheap, rather than booting the whole app for every test
   - where each test sits on the pyramid
 
 ### T3: Live functional tests against a deployed lower environment (mandatory)
@@ -163,12 +169,12 @@
   - "Two pipelines run the suite at the same time against the same environment. How do the tests avoid stepping on each other's data?"
   - "The suite fails about 5% of the time with no code change. What do you do?"
   - "Where does this sit in the pipeline, and what does a failure block?"
-  - "How is this different from your `@SpringBootTest` tests and from contract tests? Why have all three?"
+  - "How is this different from your in-process integration tests and from contract tests? Why have all three?"
   - "It's a Lambda. Does anything change?"
 - **Strong Principal answer includes:**
   - **Structure:**
-    - a separate source set or module (e.g. `src/functionalTest`) or a separate repo
-    - black-box over HTTP only (REST Assured + JUnit 5, or Karate)
+    - a separate test module, source set or repo, built and run apart from the unit tests
+    - black-box over HTTP only
     - no access to app internals
   - **Config:**
     - the base URL and environment come from env vars or profiles
@@ -182,19 +188,19 @@
     - cleanup in teardown, plus TTL or janitor jobs for leaks
     - no dependence on shared, pre-existing fixtures
   - **Determinism:**
-    - no `Thread.sleep`; poll with Awaitility for async or eventually consistent behavior
+    - no fixed sleeps; poll with a timeout for async or eventually consistent behavior
     - retries only where eventual consistency is documented, never to mask bugs
     - flaky tests are quarantined and tracked, not ignored
     - on failure, capture request/response and trace IDs
   - **Pipeline:**
     - runs as a stage after deploy and the rollout/readiness check
     - gates promotion to the next environment
-    - JUnit XML reports into Jenkins, with trends
+    - machine-readable test reports into Jenkins, with trends
   - **Scope:**
     - critical user journeys and contract-level behavior (status codes, error shapes, auth)
     - not exhaustive logic, which belongs in unit tests (the pyramid)
   - **Complements:**
-    - consumer-driven contract tests (Pact / Spring Cloud Contract) catch breaking changes *before* deploy
+    - consumer-driven contract tests (Pact) catch breaking changes *before* deploy
     - read-only post-deploy smoke tests in prod
     - synthetic monitoring
   - **Platform specifics:**
@@ -204,8 +210,8 @@
 ### T4: Proving a race is fixed
 - **Opener:** "You fixed the race in `<op>`. How do you *prove* it with a test?"
 - **Strong Principal answer includes:**
-  - many threads released together with a `CountDownLatch`, asserting the invariant afterwards
-  - repeated runs, plus knowing such tests are probabilistic (jcstress exists)
+  - many concurrent actors released together, asserting the invariant afterwards
+  - repeated runs, plus knowing such tests are probabilistic
   - for distributed state, testing against real Redis or a real DB via Testcontainers
   - tests at the functional level that fire concurrent requests at the deployed service
 
@@ -217,8 +223,8 @@
 - **Opener:** "Who is allowed to call `<endpoint>`, and where in your code is that enforced?"
 - **Drill-down:** "User A has a valid token and calls `<GET/DELETE /x/{id}>` with user B's id. What happens?"
 - **Strong Principal answer includes:**
-  - a Spring Security OAuth2 resource server validating the JWT (signature via JWKS, issuer, audience, expiry)
-  - coarse authz with scopes and roles (`requestMatchers`, `@PreAuthorize`)
+  - an OAuth2 resource server validating the JWT (signature via JWKS, issuer, audience, expiry)
+  - coarse authz with scopes and roles, declared at the edge
   - **object-level authorization** in the service layer: an ownership check (BOLA/IDOR, OWASP API #1)
   - 404 vs 403 to avoid leaking existence
   - service-to-service auth (client credentials, mTLS)
@@ -226,12 +232,12 @@
 ### S2: Hostile input
 - **Opener:** "What can a malicious client send to `<endpoint>`, and what stops it?"
 - **Strong Principal answer includes:**
-  - Bean Validation (`@Valid`, `@NotNull`, `@Size`, `@Positive`, …)
+  - validation at the edge: required fields, sizes and ranges on every input
   - limits on body size and collection size (batch DoS)
   - DTOs to prevent mass assignment
   - parameterized queries
-  - safe deserialization (no default polymorphic typing)
-  - errors without stack traces or internals (`server.error.include-stacktrace=never`)
+  - safe deserialization: no type information taken from the payload, and unknown fields rejected
+  - errors without stack traces or internals
   - rate limiting
 
 ### S3: Sensitive data
@@ -247,7 +253,7 @@
 ### S4: Staying secure over time
 - **Opener:** "Six months from now, how do you know this service is still secure?"
 - **Strong Principal answer includes:**
-  - SCA and dependency scanning (Dependabot, Snyk, OWASP dependency-check)
+  - SCA and dependency scanning (Dependabot, Snyk)
   - SAST and image scanning
   - minimal, non-root container images
   - a patch cadence
@@ -263,8 +269,8 @@
 ### O1: Logs
 - **Opener:** "One customer says their request failed yesterday. What do your logs let you reconstruct?"
 - **Strong Principal answer includes:**
-  - structured JSON logs (Boot 3.4+ `logging.structured.format.console`)
-  - trace and correlation IDs on every line through MDC, which Micrometer Tracing populates
+  - structured JSON logs
+  - trace and correlation IDs on every line, attached by the logging context rather than by hand
   - logging at boundaries and decisions, not on every line
   - level discipline
   - no PII or secrets
@@ -275,30 +281,30 @@
 - **Opener:** "What metrics does this service emit, and which ones page someone?"
 - **Drill-down:** "Would you tag that metric with userId?"
 - **Strong Principal answer includes:**
-  - RED metrics per endpoint from `http.server.requests` (Actuator + Micrometer)
+  - RED metrics (rate, errors, duration) per endpoint
   - percentile histograms and SLO buckets
-  - JVM and pool metrics
-  - business metrics via `Counter`/`Timer`/`Gauge`, such as holds expired, rejections and queue age
+  - runtime and connection-pool metrics
+  - business metrics (counters, timers, gauges), such as holds expired, rejections and queue age
   - high-cardinality tags like userId explode storage, so avoid them
   - alerting on symptoms and SLO burn rate, not on causes
 
 ### O3: Tracing
 - **Opener:** "A request goes gateway → your service → DB → a downstream service. How do you see where the time went?"
 - **Strong Principal answer includes:**
-  - Micrometer Tracing with the OpenTelemetry bridge (Sleuth is gone in Boot 3)
+  - OpenTelemetry tracing, through the SDK or auto-instrumentation
   - W3C `traceparent` propagation
-  - auto-instrumented HTTP clients and JDBC
-  - propagating context across `@Async`, executors and reactive code (the context-propagation library)
+  - auto-instrumented HTTP clients and DB calls
+  - propagating trace context across async boundaries: thread pools, callbacks and reactive code
   - a sampling strategy
   - linking logs and traces
 
 ### O4: Health and operability
 - **Opener:** "How does Kubernetes know your pod is healthy? What's the difference between liveness and readiness here?"
 - **Strong Principal answer includes:**
-  - Actuator `/actuator/health/liveness` and `/readiness` probe groups
+  - separate liveness and readiness endpoints
   - readiness reflects the ability to serve; liveness must **not** include downstream dependencies, or you get cascading restarts
-  - startup probes for slow JVM boots
-  - `server.shutdown=graceful` with a preStop hook
+  - startup probes for slow boots
+  - graceful shutdown that drains in-flight requests, with a preStop hook
 
 ### O5: An incident
 - **Opener:** "It's 2am. p99 has doubled and the error rate is 3%. Walk me through your first 15 minutes."
@@ -324,7 +330,7 @@
   - in-memory state is per instance: answers are wrong and state is lost on restart or deploy
   - externalize it (Redis or a DB)
   - sticky sessions break on scaling and deploys, and they skew load
-  - invariants enforced by DB constraints, conditional writes (DynamoDB `ConditionExpression`), optimistic locking (`@Version`) or atomic Redis ops (Lua, `INCR`)
+  - invariants enforced by DB constraints, conditional writes (DynamoDB `ConditionExpression`), optimistic locking (a version column) or atomic Redis ops (Lua, `INCR`)
   - distributed locks are a last resort because of lease expiry; mentions fencing tokens
 
 ### R2: A slow downstream
@@ -333,7 +339,7 @@
   - connect and read timeouts on every call
   - thread or pool exhaustion turning into a cascading failure
   - retries only for idempotent operations, with exponential backoff, jitter and a retry budget
-  - circuit breakers (Resilience4j) with a fallback or graceful degradation
+  - circuit breakers with a fallback or graceful degradation
   - bulkheads
   - load shedding
 

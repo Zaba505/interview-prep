@@ -1,24 +1,33 @@
 # Challenge bank
 
+This bank is stack-neutral. The `{…}` slots are filled from the layer headers, as SKILL.md § Files and paths describes, and the layer sections named below add the stack's terms. When a layer's Seed lines restate a seed field in the stack's terms, prefer that wording in CHALLENGE.md.
+
 ## Design rules
 
-**Part 1 (plain Java, about 20–25 minutes):**
-- **Scope:** solvable in 20–25 minutes by a strong engineer. Keep it to one core idea, not a puzzle.
+**Part 1 (plain {Language}, about {part1_min} minutes):**
+- **Scope:** solvable in {part1_min} minutes by a strong engineer. Keep it to one core idea, not a puzzle.
 - **Domain:** generic business domains. Avoid cards and payments.
 - **Planted edge cases:** include 2–3 that the statement deliberately doesn't settle, such as empty input, ties, duplicates, unsorted input, boundary inclusivity, time zones, or rounding. A strong candidate asks about them. Don't hint at them.
 - **Room for Principal-level choices:**
-  - immutability and records
+  - immutability and value types
   - interfaces where extension is likely
   - pure logic kept separate from state and IO
-  - an injectable `Clock` for anything time-based
-- **Signatures:** give a short Java interface sketch for the *collections* and *stateful* shapes. For the *modeling* shape, describe behaviors only, because the model is the exercise.
+  - an injectable clock for anything time-based
+- **Signatures:** give a short {Language} interface sketch for the *collections* and *stateful* shapes. For the *modeling* shape, describe behaviors only, because the model is the exercise.
+- **Render in {Language}:** the seeds use neutral pseudo-signatures, `name(param: type, …) → result`.
+  - The types are `list<T>`, `map<K, V>`, `set<T>`, `optional<T>`, enums, scalars (`string`, `int`, `bool`), and the language file's Type mapping concepts (`instant`, `duration`, `money`, `clock`, …). A capitalized name such as `Event` is a value type.
+  - Write every name, type and signature in CHALLENGE.md as {Language} code, using the Type mapping's idioms. Never show the pseudo-syntax to the candidate.
+- **Calibration:** apply the language file's Seed calibration entry for the seed. Drop what a `trim:` names, and say each `stub:` and `forbid:` in the Part 1 statement.
 - **Examples:** include 1–2 small concrete examples with expected output.
 
-**Part 2 (about 20–25 minutes, revealed only after Part 1 is done):**
+**Part 2 (about {part2_min} minutes, revealed only after Part 1 is done):**
 - **Capabilities, not endpoints:** describe what the API must let clients do in plain language. The candidate picks paths, verbs, status codes and DTOs.
 - **Baseline requirements:** DTOs separate from domain types, input validation, a consistent error format, appropriate status codes, and Part 1 logic reused rather than rewritten.
 - **The twist:** exactly one, taken from the seed and mutated. It should create an API-design decision (idempotency, concurrency control, async, pagination, authz, or conditional requests).
-- **Out of scope:** say explicitly that build files, `application.yml`, a real database and full security config aren't needed. An in-memory repository behind an interface is fine.
+  - Apply both layers' Twist guards for the twist's kind. The kinds are idempotency (C5, S2), concurrency (S5, M2), async (C2, M4), late-data (C1), caching (C3), partial-failure (C4), authz (S3), conditional-requests (S4), runtime-config (S1), versioned-rules (M1, M3), latency-budget (M5) and pagination (no seed). A mutated twist keeps the kind of what it became.
+  - Neutral mechanism words in a twist or sketch, such as "cross-cutting middleware" or "typed config", take the framework file's Mechanisms idiom.
+- **Built-ins:** if the framework file's Built-ins to forbid names something for the seed, Part 2's requirements tell the candidate to build it themselves.
+- **Out of scope:** say explicitly that build files, a real database and the framework file's Not needed items aren't needed. An in-memory repository behind an interface is fine.
 
 **Every seed has:**
 - a Part 1 sketch
@@ -27,15 +36,15 @@
 - the twist
 - follow-up hooks, meaning the natural pressure points to probe in Phase 3
 
-**Seeds are templates.** Always mutate them: rename the domain, change one rule, swap the twist for a sibling. Keep the difficulty the same.
+**Seeds are templates.** Always mutate them: rename the domain, change one rule, swap the twist for a sibling. Keep the difficulty the same. Both layers' Seed lines for a seed add to it, including any planted edges the stack adds.
 
 ---
 
 ## Seeds: collection processing
 
 ### C1. Event sessionizer
-- **Part 1:** given `List<Event>` (userId, timestamp, path), split each user's events into sessions. A gap greater than 30 minutes starts a new session. Return per-user session summaries: start, end, eventCount, distinctPaths.
-  - Sketch: `Map<String, List<Session>> sessionize(List<Event> events, Duration gap)`.
+- **Part 1:** given a list of `Event` (userId, timestamp, path), split each user's events into sessions. A gap greater than 30 minutes starts a new session. Return per-user session summaries: start, end, eventCount, distinctPaths.
+  - Sketch: `sessionize(events: list<Event>, gap: duration) → map<string, list<Session>>`, keyed by userId.
 - **Planted edges:**
   - the input isn't sorted
   - a gap of exactly 30 minutes (same session or new?)
@@ -51,14 +60,14 @@
   - pagination of sessions
 
 ### C2. Two-feed reconciliation
-- **Part 1:** reconcile `List<Order>` (orderId, sku, qty) from system A against `List<Shipment>` (shipmentId, orderId, sku, qtyShipped) from system B. Report:
+- **Part 1:** reconcile a list of `Order` (orderId, sku, qty) from system A against a list of `Shipment` (shipmentId, orderId, sku, qtyShipped) from system B. Report:
   - matched
   - missing shipments
   - unexpected shipments (no matching order)
   - quantity mismatches (under or over)
 
   One order line may ship across several shipments.
-  - Sketch: `ReconciliationReport reconcile(List<Order> orders, List<Shipment> shipments)`.
+  - Sketch: `reconcile(orders: list<Order>, shipments: list<Shipment>) → ReconciliationReport`.
 - **Planted edges:**
   - duplicate records within a feed
   - the same order with multiple SKUs
@@ -74,14 +83,14 @@
   - access control on reports
 
 ### C3. Top-N per category over a time window
-- **Part 1:** given `List<Sale>` (productId, category, quantity, unitPrice, soldAt), return the top N products by revenue for each category within `[from, to)`. Break ties by productId ascending.
-  - Sketch: `Map<String, List<ProductRevenue>> topN(List<Sale> sales, Instant from, Instant to, int n)`.
+- **Part 1:** given a list of `Sale` (productId, category, quantity, unitPrice, soldAt), return the top N products by revenue for each category within `[from, to)`. Break ties by productId ascending.
+  - Sketch: `topN(sales: list<Sale>, from: instant, to: instant, n: int) → map<string, list<ProductRevenue>>`, keyed by category.
 - **Planted edges:**
   - a category with fewer than N products
   - ties
   - the half-open interval boundary
   - returns (negative quantity)
-  - money as `BigDecimal` vs `double`
+  - money as an exact decimal vs floating point
 - **Part 2 sketch:** `POST /sales` and `GET /categories/{category}/top-products?from&to&limit`.
   - **Twist:** results may be up to 60 seconds stale, so the candidate has to design caching. Also validate the `limit` range.
 - **Hooks:**
@@ -92,8 +101,8 @@
   - HTTP caching headers
 
 ### C4. Duplicate-contact grouping
-- **Part 1:** given `List<Contact>` (id, name, email, phone), group the contacts that are duplicates. Two contacts match when they share a normalized email (trimmed, case-insensitive) **or** a normalized phone (digits only, with a leading country code `1` dropped). Matching is transitive: if A matches B by email and B matches C by phone, all three are one group.
-  - Sketch: `List<Set<String>> duplicateGroups(List<Contact> contacts)`.
+- **Part 1:** given a list of `Contact` (id, name, email, phone), group the contacts that are duplicates. Two contacts match when they share a normalized email (trimmed, case-insensitive) **or** a normalized phone (digits only, with a leading country code `1` dropped). Matching is transitive: if A matches B by email and B matches C by phone, all three are one group.
+  - Sketch: `duplicateGroups(contacts: list<Contact>) → list<set<string>>`, each set holding contact ids.
 - **Planted edges:**
   - transitivity (needs union-find or a graph traversal, not pairwise checks)
   - null or blank fields
@@ -105,12 +114,12 @@
   - PII in logs and at rest
   - batch-size limits (DoS)
   - the partial-failure contract
-  - per-row error shape in ProblemDetail
+  - per-row error shape in the problem details
   - async processing for large imports
 
 ### C5. Leaderboard aggregation
-- **Part 1:** given `List<MatchResult>` (matchId, playerId, score, playedAt), build a leaderboard. A player's rating is the sum of their best 3 scores, and they need at least 3 matches to qualify. Return players ranked by rating.
-  - Sketch: `List<Standing> leaderboard(List<MatchResult> results)`.
+- **Part 1:** given a list of `MatchResult` (matchId, playerId, score, playedAt), build a leaderboard. A player's rating is the sum of their best 3 scores, and they need at least 3 matches to qualify. Return players ranked by rating.
+  - Sketch: `leaderboard(results: list<MatchResult>) → list<Standing>`.
 - **Planted edges:**
   - a duplicate matchId (a resubmission must not double-count)
   - fewer than 3 matches
@@ -128,14 +137,14 @@
 ## Seeds: stateful component
 
 ### S1. Per-client rate limiter
-- **Part 1:** `RateLimiter.tryAcquire(String clientId) → boolean` allows at most N requests per window W per client, and limits vary by client tier. Inject a `Clock`.
+- **Part 1:** `RateLimiter.tryAcquire(clientId: string) → bool` allows at most N requests per window W per client, and limits vary by client tier. Inject a clock.
 - **Planted edges:**
   - fixed vs sliding window (a burst at the boundary)
   - thread safety
   - memory held for idle clients
   - an unknown tier
-- **Part 2 sketch:** enforce the limiter on an existing `GET /reports/{id}` through a `HandlerInterceptor` or filter. Return 429 with `Retry-After` and `RateLimit-*` headers. Add `GET /admin/rate-limits/{clientId}` for inspection. The client is identified by an API-key header.
-  - **Twist:** per-tier limits come from `@ConfigurationProperties` and must be changeable without a code change.
+- **Part 2 sketch:** enforce the limiter on an existing `GET /reports/{id}` through cross-cutting middleware. Return 429 with `Retry-After` and `RateLimit-*` headers. Add `GET /admin/rate-limits/{clientId}` for inspection. The client is identified by an API-key header.
+  - **Twist:** per-tier limits come from typed config and must be changeable without a code change.
 - **Hooks:**
   - state across replicas (Redis + Lua, token bucket)
   - per-key atomicity
@@ -150,7 +159,7 @@
   - `release(holdId)`
   - `available(sku)`
 
-  Expired holds give their stock back. Inject a `Clock`.
+  Expired holds give their stock back. Inject a clock.
 - **Planted edges:**
   - confirming an expired hold
   - releasing twice
@@ -173,13 +182,13 @@
 - **Planted edges:**
   - back-to-back bookings (end == start is not an overlap)
   - zero-length or negative intervals
-  - `Instant` vs `LocalDateTime`/time zones
+  - instants vs local date-times and time zones
   - cancelling a booking that doesn't exist
 - **Part 2 sketch:** `POST /rooms/{roomId}/bookings` (201 or 409), `DELETE /bookings/{id}`, `GET /rooms/availability?start&end&minCapacity`.
   - **Twist:** only the organizer can cancel, so the API needs authz. The 409 body should help the client without leaking other people's meetings.
 - **Hooks:**
   - double-booking races across replicas (a DB exclusion constraint or conditional write)
-  - `TreeMap` floor/ceiling for interval lookup
+  - ordered-map floor/ceiling for interval lookup
   - BOLA on cancel
   - information leakage in errors
 
@@ -197,7 +206,7 @@
 - **Part 2 sketch:** `PUT /configs/{key}` with `If-Match` (412 on mismatch), `If-None-Match: *` for create-only, `GET` returning an `ETag`, and `GET /configs/{key}/history`.
   - **Twist:** conditional requests: ETag, If-Match, 412, and 428 Precondition Required when If-Match is missing.
 - **Hooks:**
-  - compare-and-set (`ConcurrentHashMap.compute`)
+  - compare-and-set (a per-key atomic update)
   - DynamoDB conditional writes
   - history growth
   - 304 caching
@@ -206,7 +215,7 @@
 ### S5. Job queue with leases and dead-letter
 - **Part 1:** `JobQueue` with these operations:
   - `submit(payload) → jobId`
-  - `lease(workerId) → Optional<Lease>`, where the job stays invisible for the visibility timeout
+  - `lease(workerId) → optional<Lease>`, where the job stays invisible for the visibility timeout
   - `ack(leaseToken)`
   - `nack(leaseToken)`
 
@@ -238,7 +247,7 @@
   Promotions have a priority, and some are exclusive (they don't stack). Return a line-level and total breakdown that shows which promotions applied.
 - **Planted edges:**
   - order of application
-  - rounding and `BigDecimal`
+  - rounding and exact decimal money
   - exclusivity conflicts
   - the total must never go below 0
 - **Part 2 sketch:** `POST /quotes` (cart in, priced quote with breakdown out), `GET /quotes/{id}`, and admin `POST /promotions`.
@@ -262,10 +271,10 @@
   - illegal transitions
   - concurrent approvals
 - **Part 2 sketch:** `POST /documents`, `POST /documents/{id}/transitions` (or one action endpoint per transition), `GET /documents/{id}/history`.
-  - **Twist:** an illegal transition returns 409 with a ProblemDetail listing the allowed transitions, and concurrent approvals must not lose a vote.
+  - **Twist:** an illegal transition returns 409 with problem details listing the allowed transitions, and concurrent approvals must not lose a vote.
 - **Hooks:**
   - authz combining role with "not your own doc"
-  - optimistic locking with `@Version`
+  - optimistic locking with a version field
   - publishing approval events (outbox)
   - audit immutability
 
@@ -339,15 +348,13 @@
 
 ## Ground rules
 
-- Write your Java in this folder, with any file names and layout you like.
-- Pseudo-syntax is fine. You don't need imports, a package declaration, `main` or build files; go straight to classes and methods.
-- Minor syntax slips don't matter. Records, Lombok and `// assume X exists` stubs are all fine.
+- <each bullet of the language file's Ground rules, one per line>
 - Ask clarifying questions at any time; asking them is part of the exercise.
 - Say **"part 1 done"** when you're ready to move on. Ask for a hint if you're stuck; hints are noted in the debrief, as they would be on a real panel.
 
-## Part 1: <short name> (~20–25 min)
+## Part 1: <short name> (~{part1_min} min)
 
-<Problem statement: context in 1–2 sentences, then precise behavior.>
+<Problem statement: context in 1–2 sentences, then precise behavior. Then any `stub:` or `forbid:` from the language file's Seed calibration.>
 
 ### Example
 
@@ -355,9 +362,9 @@
 
 ### Interface sketch
 
-<For collections and stateful only. Omit for modeling.>
+<For collections and stateful only. Omit for modeling. The seed's signature, rendered in {Language}.>
 
-```java
+```{fence}
 <signatures>
 ```
 ````
@@ -365,11 +372,11 @@
 ## Part 2 template (append to CHALLENGE.md at "part 1 done")
 
 ```markdown
-## Part 2: Expose it as a Spring API (~20–25 min)
+## Part 2: Expose it as a {part2_noun} (~{part2_min} min)
 
 _Revealed at <HH:MM>._
 
-Wrap your Part 1 code in a Spring Boot REST API. Keep the Part 1 logic reusable: the API should be a layer around it, not a rewrite.
+Wrap your Part 1 code in a {part2_noun}. Keep the Part 1 logic reusable: the API should be a layer around it, not a rewrite.
 
 ### Clients need to be able to
 
@@ -384,10 +391,11 @@ Wrap your Part 1 code in a Spring Boot REST API. Keep the Part 1 logic reusable:
 - A consistent error response format
 - Appropriate status codes
 - **<The twist, stated as a requirement>**
+- <One line per entry in the framework file's Built-ins to forbid for this seed, saying to build it yourself instead. Omit if none.>
 
 ### Not needed
 
-Build files, `application.yml`, a real database (an in-memory store behind a repository interface is fine), or full Spring Security configuration.
+Build files, a real database (an in-memory store behind a repository interface is fine), or <the framework file's Not needed items>.
 ```
 
 ---

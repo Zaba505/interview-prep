@@ -2,30 +2,34 @@
 
 ## Building the private rubric (at the start of Phase 3)
 
-Work from CHALLENGE.md, the seed it was mutated from (if any) in `challenge-bank.md`, and the candidate's code. Keep the result in your working context only. It reaches disk only through the debrief (FEEDBACK.md, session.yaml and the TRANSCRIPT.md annotations).
+This rubric is stack-neutral. The `{…}` slots are filled from the layer headers, as SKILL.md § Files and paths describes, and the layer sections named below add the stack's terms.
+
+Work from CHALLENGE.md, the seed it was mutated from (if any) in `challenge-bank.md` together with both layers' Seed lines for it, and the candidate's code. Keep the result in your working context only. It reaches disk only through the debrief (FEEDBACK.md, session.yaml and the TRANSCRIPT.md annotations).
 
 Cover these points:
 - **Expected Part 1 approach:** the approach and complexity of each core operation.
-- **Planted edge cases:** for each one, record whether the candidate *asked* (check the transcript), *handled it in code*, or missed it.
+- **Planted edge cases:** for each one, record whether the candidate *asked* (check the transcript), *handled it in code*, or missed it. Include any planted edges the layers' Seed lines add.
 - **Reference API shape:** from the seed's Part 2 sketch, or your own design for a novel problem. Compare resources, verbs, status codes and the error contract against it.
-- **The twist:** what handling it well looks like.
+- **The twist:** what handling it well looks like. Both layers' Twist guards for its kind say where it bites in this stack.
+- **Expected adaptation:** how the Part 1 code should be wrapped, from the framework file's Expected Part 1 adaptation. Going beyond it counts as rewriting Part 1.
 - **Code-specific hooks:** concrete issues and choices in *their* code, with `file:line`. These are your follow-up openers. Examples:
-  - a non-thread-safe field in a singleton
-  - a domain entity returned from a controller
+  - every Code hook in both layer files
+  - shared mutable state that isn't safe under concurrent requests
+  - domain or persistence types on the wire
   - a 200 returned from a create
-  - a missing `@Valid`
+  - request input that's never validated
   - a swallowed exception
-  - `double` used for money
+  - floating point used for money
 
 ## Scoring ground rules
 
 - **Never penalize:**
-  - missing imports, package, `main` or build files
-  - getters, setters or boilerplate
+  - missing imports or build files
+  - boilerplate
   - minor syntax slips
-  - Lombok or records
   - `// assume X exists` stubs
-  - not remembering an exact annotation name (syntax questions are free)
+  - not remembering an exact API name (syntax questions are free)
+  - anything on the **Free** list of the language file's Tolerance
 - **Do penalize, in proportion to severity:**
   - logic errors, and planted edges that were both unhandled and not asked about
   - races in shared state
@@ -34,6 +38,7 @@ Cover these points:
   - swallowed or over-broad exception handling
   - inconsistent error shapes
   - rewriting Part 1 instead of reusing it
+  - anything on the **Scored** list of the language file's Tolerance, even where it looks like ceremony
 - **Hints:**
   - A level-1 nudge is minor.
   - Level 2 caps that dimension at 3.
@@ -55,8 +60,8 @@ The **Key** column is the `score_<key>` name used in session.yaml.
 | # | Dimension | Key | What a 3 (Principal) looks like |
 |---|---|---|---|
 | 1 | Problem solving & correctness | `correctness` | Clarifies before coding. Correct on all planted edges, whether asked about or handled. States complexity. Picks the right data structures. |
-| 2 | Code quality & modeling | `code_quality` | Readable names and small methods. Immutability and records where it fits. Pure logic separated from state, time and IO (injected `Clock`). Abstractions only where extension is likely. |
-| 3 | Spring implementation (Part 2 code) | `framework_impl` | Clean controller → service → domain layering that reuses Part 1. DTOs plus Bean Validation. `@RestControllerAdvice` producing a consistent `ProblemDetail`. Correct status codes. Constructor injection. Thread-safe singleton state. The twist handled deliberately. |
+| 2 | Code quality & modeling | `code_quality` | Readable names and small methods. Immutable values where they fit. Pure logic separated from state, time and IO (an injected clock). Abstractions only where extension is likely. Then the language file's Dim-2 anchor. |
+| 3 | {Framework} implementation (Part 2 code) | `framework_impl` | A thin HTTP layer that reuses Part 1. DTOs and validation at the edge. One central mapping to problem details. Correct status codes. Explicit dependency wiring. Shared state that's safe under concurrent requests. The twist handled deliberately. Then the framework file's Dim-3 anchor. |
 | 4 | Communication | `communication` | Asks design-shaping questions and states assumptions. Gives a crisp walkthrough. Answers are structured (conclusion first, then mechanics), and the candidate takes pushback well. |
 | 5 | Performance | `performance` | See `follow-ups.md` § Performance signals. |
 | 6 | API design & versioning | `api_design` | See § API design & versioning. |
@@ -70,7 +75,7 @@ The **Key** column is the `score_<key>` name used in session.yaml.
 **Positive:**
 - Asks questions that change the design before coding: volumes, consistency needs, consumers.
 - States assumptions explicitly.
-- Designs for testability, with pure functions and an injected `Clock`.
+- Designs for testability, with pure functions and an injected clock.
 - Raises trade-offs unprompted, picks one, and says why.
 - Zooms out to consumers, contracts, operability, rollout and team practice.
 - Ties choices to failure modes ("if Redis is down, then…").
@@ -79,8 +84,8 @@ The **Key** column is the `score_<key>` name used in session.yaml.
 **Red flags:**
 - Jumps straight to code.
 - Can't state complexity.
-- Ignores concurrency in a singleton.
-- Exposes entities.
+- Ignores concurrent access to shared state.
+- Puts domain or persistence types on the wire.
 - Gives mechanism-free buzzword answers ("just add Kafka").
 - Gets defensive when probed.
 - Over-engineers a 25-minute problem.
@@ -110,10 +115,10 @@ Judgment overrides arithmetic, but say why when it does. Write it the way a cand
 
 | Phase | Actual | Target |
 |---|---|---|
-| Part 1 | <m> min | 20–25 |
-| Part 2 | <m> min | 20–25 |
+| Part 1 | <m> min | {part1_min} |
+| Part 2 | <m> min | {part2_min} |
 | Follow-ups | ~<m> min | 15–20 |
-| **Total** | <m> min | 55–70 |
+| **Total** | <m> min | <total target> |
 
 Hints used: <n> (<level and topic for each, or "none">)
 
@@ -123,7 +128,7 @@ Hints used: <n> (<level and topic for each, or "none">)
 |---|---|---|
 | Problem solving & correctness | <1–4> | <one line> |
 | Code quality & modeling | | |
-| Spring implementation | | |
+| {Framework} implementation | | |
 | Communication | | |
 | Performance | | |
 | API design & versioning | | |
@@ -143,7 +148,7 @@ Not assessed: <categories, or "none">
 
 | Severity | Location | Issue | Better approach |
 |---|---|---|---|
-| High | `<File>.java:<line>` | <what's wrong and its impact> | <concrete fix> |
+| High | `<File>.<ext>:<line>` | <what's wrong and its impact> | <concrete fix> |
 
 Severity levels:
 - **High:** wrong results, data loss, or a security hole.
@@ -160,6 +165,8 @@ Each question, your verbatim answer, and a strong Principal answer are in [TRANS
 2. **<Topic>**: …
 3. **<Topic>**: …
 ```
+
+**Timeline targets:** `{part1_min}` and `{part2_min}` come from the layer headers, and the follow-ups take 15–20. The Total target is `part1_min + part2_min + 15–20`, adding the low ends and the high ends separately: `20–25` and `20–25` give `55–70`, and `20–25` and `25–30` give `60–75`.
 
 ## session.yaml
 
