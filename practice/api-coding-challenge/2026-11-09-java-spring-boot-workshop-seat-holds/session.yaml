@@ -1,0 +1,20 @@
+skill: api-coding-challenge
+date: 2026-11-09
+title: "Workshop Seat Holds"
+status: complete
+language: java
+framework: spring-boot
+shape: stateful
+seed: S2
+verdict: No Hire
+topics: "hold expiry, check-then-act race, idempotency keys, 409 vs 500, BOLA, Postgres capacity locking"
+score_correctness: 1
+score_code_quality: 2
+score_framework_impl: 1
+score_communication: 2
+score_performance: 2
+score_api_design: 2
+score_testing: 2
+score_security: 2
+score_observability: 2
+score_resilience: 2
